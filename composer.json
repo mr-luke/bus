@@ -1,0 +1,46 @@
+{
+  "name": "mr-luke/bus",
+  "description": "Multi-purpose bus for Laravel",
+  "keywords": ["bus", "laravel"],
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Łukasz Sitnicki",
+      "email": "lukasz.sitnicki@gmail.com"
+    }
+  ],
+  "require": {
+    "php": ">=7.1",
+    "ext-json": "*",
+    "illuminate/bus": "^8.0|^7.0|^6.0",
+    "illuminate/database": "^8.0|^7.0|^6.0",
+    "illuminate/support": "^8.0|^7.0|^6.0",
+    "mr-luke/configuration": "^1.0",
+    "nesbot/carbon": "^2.16.0"
+  },
+  "require-dev": {
+    "fzaninotto/faker": "^1.9",
+    "orchestra/testbench": "^6.0|^5.0|^4.0",
+    "phpunit/phpunit": "^8.0|^7.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Mrluke\\Bus\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Tests\\": "tests/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Mrluke\\Bus\\BusServiceProvider"
+      ]
+    }
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true
+}
