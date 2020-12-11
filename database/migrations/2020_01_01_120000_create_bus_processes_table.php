@@ -50,13 +50,12 @@ class CreateBusProcessesTable extends Migration
                     [
                         Process::New,
                         Process::Pending,
-                        Process::Succeed,
-                        Process::Failed,
+                        Process::Finished,
                         Process::Canceled
                     ]
                 )->default(Process::New);
                 $table->unsignedInteger('handlers')->default(1);
-                $table->json('result')->nullable();
+                $table->json('results')->nullable();
                 $table->{$this->config->get('users.primary.type')}('committed_by')->nullable();
                 $table->timestamp('committed_at', 6);
                 $table->timestamp('started_at', 6)->nullable();

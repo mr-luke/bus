@@ -5,11 +5,16 @@ namespace Mrluke\Bus;
 use Closure;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Pipeline\Pipeline;
+use ReflectionClass;
 
 use Mrluke\Bus\Contracts\Bus;
+use Mrluke\Bus\Contracts\Handler;
+use Mrluke\Bus\Contracts\HasAsyncProcesses;
 use Mrluke\Bus\Contracts\Intention;
 use Mrluke\Bus\Contracts\Process;
 use Mrluke\Bus\Contracts\ProcessRepository;
+use Mrluke\Bus\Contracts\ShouldBeAsync;
+use Mrluke\Bus\Exceptions\InvalidHandler;
 
 /**
  * Abstract Bus class with basic implementations.
@@ -84,7 +89,13 @@ abstract class AbstractBus implements Bus
      */
     public function dispatch(Intention $intention): Process
     {
-        // TODO: Implement dispatch() method.
+        $handler = $this->handler($intention);
+
+        if ($intention instanceof ShouldBeAsync && $this instanceof HasAsyncProcesses) {
+            return $this->runAsync($intention, $handler);
+        }
+
+        return $this->run($intention, $handler);
     }
 
     /**
@@ -93,6 +104,31 @@ abstract class AbstractBus implements Bus
     public function hasHandler(Intention $intention): bool
     {
         return array_key_exists(get_class($intention), $this->handlers);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function handler(Intention $intention)
+    {
+        $handler = $this->handlers[get_class($intention)];
+
+        if (is_array($handler)) {
+            throw new InvalidHandler(
+                sprintf('Invalid handler for [%s]. Single Handler required.', get_class($intention))
+            );
+        }
+
+        $reflection = new ReflectionClass($handler);
+
+        if (
+            !$reflection->isInstantiable() ||
+            !in_array(Handler::class, $reflection->getInterfaces())
+        ) {
+            throw new InvalidHandler('Handler must be an instance of %s', Handler::class);
+        }
+
+        return $handler;
     }
 
     /**
@@ -122,4 +158,28 @@ abstract class AbstractBus implements Bus
      * @codeCoverageIgnore
      */
     abstract protected function getBusName(): string;
+
+    /**
+     * Run handler synchronously.
+     *
+     * @param \Mrluke\Bus\Contracts\Intention $intention
+     * @param \Mrluke\Bus\Contracts\Handler   $handler
+     * @return \Mrluke\Bus\Contracts\Process
+     */
+    protected function run(Intention $intention, Handler $handler): Process
+    {
+        //TODO: Implement run method
+    }
+
+    /**
+     * Run handler asynchronously.
+     *
+     * @param \Mrluke\Bus\Contracts\ShouldBeAsync $intention
+     * @param \Mrluke\Bus\Contracts\Handler       $handler
+     * @return \Mrluke\Bus\Contracts\Process
+     */
+    protected function runAsync(ShouldBeAsync $intention, Handler $handler): Process
+    {
+        //TODO: Implement runAsync method
+    }
 }

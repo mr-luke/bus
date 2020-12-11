@@ -3,6 +3,8 @@
 namespace Mrluke\Bus;
 
 use Mrluke\Bus\Contracts\CommandBus as CommandBusContract;
+use Mrluke\Bus\Contracts\HasAsyncProcesses;
+use Mrluke\Bus\Extensions\UsesDefaultQueue;
 
 /**
  * Command Bus.
@@ -13,8 +15,10 @@ use Mrluke\Bus\Contracts\CommandBus as CommandBusContract;
  * @link    https://github.com/mr-luke/bus
  * @package Mrluke\Bus
  */
-final class CommandBus extends AbstractBus implements CommandBusContract
+class CommandBus extends AbstractBus implements CommandBusContract, HasAsyncProcesses
 {
+    use UsesDefaultQueue;
+
     /**
      * @inheritDoc
      */

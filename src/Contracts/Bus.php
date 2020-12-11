@@ -20,7 +20,9 @@ interface Bus
      *
      * @param \Mrluke\Bus\Contracts\Intention $intention
      * @return \Mrluke\Bus\Contracts\Process
+     * @throws \Mrluke\Bus\Exceptions\InvalidHandler
      * @throws \Mrluke\Bus\Exceptions\MissingHandler
+     * @throws \ReflectionException
      */
     public function dispatch(Intention $intention): Process;
 
@@ -31,6 +33,16 @@ interface Bus
      * @return bool
      */
     public function hasHandler(Intention $intention): bool;
+
+    /**
+     * Return handler of given intention.
+     *
+     * @param \Mrluke\Bus\Contracts\Intention $intention
+     * @return \Mrluke\Bus\Contracts\Handler|\Mrluke\Bus\Contracts\Handler[]
+     * @throws \Mrluke\Bus\Exceptions\InvalidHandler
+     * @throws \ReflectionException
+     */
+    public function handler(Intention $intention);
 
     /**
      * Map an intention to a handler.
