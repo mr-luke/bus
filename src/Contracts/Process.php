@@ -70,6 +70,13 @@ interface Process
     ): Process;
 
     /**
+     * Return id of process.
+     *
+     * @return string
+     */
+    public function id(): string;
+
+    /**
      * Determine if process is already finished.
      *
      * @return bool
@@ -99,6 +106,20 @@ interface Process
      * @throws \Mrluke\Bus\Exceptions\InvalidAction
      */
     public static function fromDatabase(stdClass $model): Process;
+
+    /**
+     * Determine if process can be marked as finished.
+     *
+     * @return bool
+     */
+    public function qualifyAsFinished(): bool;
+
+    /**
+     * Determine if process can be started.
+     *
+     * @return bool
+     */
+    public function qualifyToStart(): bool;
 
     /**
      * Mark process as started.

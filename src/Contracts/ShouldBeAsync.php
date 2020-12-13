@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Mrluke\Bus\Contracts;
 
 /**
- * This interface makes Intention an async one.
+ * This interface makes Instruction an async one.
  *
  * @author  Łukasz Sitnicki <lukasz.sitnicki@movecloser.pl>
  * @version 1.0.0

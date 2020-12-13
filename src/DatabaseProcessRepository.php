@@ -139,6 +139,14 @@ class DatabaseProcessRepository implements ProcessRepository
     /**
      * @inheritDoc
      */
+    public function delete(string $processId): void
+    {
+        $this->getBuilder()->delete($processId);
+    }
+
+    /**
+     * @inheritDoc
+     */
     public function find(string $processId): Process
     {
         $model = $this->getBuilder()->find($processId);

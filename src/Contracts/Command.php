@@ -13,4 +13,4 @@ namespace Mrluke\Bus\Contracts;
  * @link    https://github.com/mr-luke/bus
  * @package Mrluke\Bus\Contracts
  */
-interface Command extends Intention {}
+interface Command extends Instruction {}

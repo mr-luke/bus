@@ -14,10 +14,10 @@ namespace Mrluke\Bus\Contracts;
 interface Handler
 {
     /**
-     * Handle intention business logic.
+     * Handle instruction business logic.
      *
-     * @param  \Mrluke\Bus\Contracts\Intention $intention
+     * @param  \Mrluke\Bus\Contracts\Instruction $instruction
      * @return mixed
      */
-    public function handle(Intention $intention);
+    public function handle(Instruction $instruction);
 }

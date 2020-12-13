@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Mrluke\Bus\Contracts;
 
+use Carbon\Carbon;
+
 /**
- * This interface makes Intention an async one.
+ * This interface makes Instruction an async one.
  *
  * @author  Łukasz Sitnicki <lukasz.sitnicki@movecloser.pl>
  * @version 1.0.0
@@ -16,11 +18,10 @@ namespace Mrluke\Bus\Contracts;
 interface HasAsyncProcesses
 {
     /**
-     * Return queue connection name.
-     *
-     * @return string|null
+     * Return async delay.
+     * @return \Carbon\Carbon|null
      */
-    public function onConnection(): ?string;
+    public function delay(): ?Carbon;
 
     /**
      * Return queue name.

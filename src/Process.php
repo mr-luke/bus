@@ -199,6 +199,14 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
     }
 
     /**
+     * @inheritDoc
+     */
+    public function id(): string
+    {
+        return $this->id;
+    }
+
+    /**
      * Determine if process is already finished.
      *
      * @return bool
@@ -267,6 +275,40 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
             $model->started_at ? CarbonImmutable::createFromTimestamp($model->started_at) : null,
             $model->finished_at ? CarbonImmutable::createFromTimestamp($model->finished_at) : null
         );
+    }
+
+    /**
+     * Determine if process can be marked as finished.
+     *
+     * @return bool
+     */
+    public function qualifyAsFinished(): bool
+    {
+        $aggregated = 0;
+        foreach ($this->results as $h => $r) {
+            if (in_array($r['status'], [ProcessContract::Succeed, ProcessContract::Failed])) {
+                ++$aggregated;
+            }
+        }
+
+        return $aggregated === $this->handlers;
+    }
+
+    /**
+     * Determine if process can be started.
+     *
+     * @return bool
+     */
+    public function qualifyToStart(): bool
+    {
+        $aggregated = 0;
+        foreach ($this->results as $h => $r) {
+            if ($r['status'] === ProcessContract::New) {
+                ++$aggregated;
+            }
+        }
+
+        return $aggregated === $this->handlers;
     }
 
     /**
@@ -366,39 +408,5 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
         }
 
         return $candidate;
-    }
-
-    /**
-     * Determine if process can be marked as finished.
-     *
-     * @return bool
-     */
-    protected function qualifyAsFinished(): bool
-    {
-        $aggregated = 0;
-        foreach ($this->results as $h => $r) {
-            if (in_array($r['status'], [ProcessContract::Succeed, ProcessContract::Failed])) {
-                ++$aggregated;
-            }
-        }
-
-        return $aggregated === $this->handlers;
-    }
-
-    /**
-     * Determine if process can be started.
-     *
-     * @return bool
-     */
-    protected function qualifyToStart(): bool
-    {
-        $aggregated = 0;
-        foreach ($this->results as $h => $r) {
-            if ($r['status'] === ProcessContract::New) {
-                ++$aggregated;
-            }
-        }
-
-        return $aggregated === $this->handlers;
     }
 }

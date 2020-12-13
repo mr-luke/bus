@@ -67,6 +67,14 @@ interface ProcessRepository
     public function create(string $busName, string $process, array $handlers): Process;
 
     /**
+     * Delete process by given id.
+     *
+     * @param string $processId
+     * @return void
+     */
+    public function delete(string $processId): void;
+
+    /**
      * Retrieve process by given id.
      *
      * @param string $processId

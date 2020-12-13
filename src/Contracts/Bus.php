@@ -16,36 +16,40 @@ namespace Mrluke\Bus\Contracts;
 interface Bus
 {
     /**
-     * Dispatch an intention due to it's requirements.
+     * Dispatch an instruction due to it's requirements.
      *
-     * @param \Mrluke\Bus\Contracts\Intention $intention
-     * @return \Mrluke\Bus\Contracts\Process
+     * @param \Mrluke\Bus\Contracts\Instruction $instruction
+     * @param bool                              $cleanOnSuccess
+     * @return \Mrluke\Bus\Contracts\Process|void
+     * @throws \Mrluke\Bus\Exceptions\InvalidAction
      * @throws \Mrluke\Bus\Exceptions\InvalidHandler
+     * @throws \Mrluke\Bus\Exceptions\MissingConfiguration
      * @throws \Mrluke\Bus\Exceptions\MissingHandler
+     * @throws \Illuminate\Contracts\Container\BindingResolutionException
      * @throws \ReflectionException
      */
-    public function dispatch(Intention $intention): Process;
+    public function dispatch(Instruction $instruction, bool $cleanOnSuccess = false): Process;
 
     /**
-     * Check if an intention has it's handler registered.
+     * Check if an instruction has it's handler registered.
      *
-     * @param \Mrluke\Bus\Contracts\Intention $intention
+     * @param \Mrluke\Bus\Contracts\Instruction $instruction
      * @return bool
      */
-    public function hasHandler(Intention $intention): bool;
+    public function hasHandler(Instruction $instruction): bool;
 
     /**
-     * Return handler of given intention.
+     * Return handler of given instruction.
      *
-     * @param \Mrluke\Bus\Contracts\Intention $intention
+     * @param \Mrluke\Bus\Contracts\Instruction $instruction
      * @return \Mrluke\Bus\Contracts\Handler|\Mrluke\Bus\Contracts\Handler[]
      * @throws \Mrluke\Bus\Exceptions\InvalidHandler
      * @throws \ReflectionException
      */
-    public function handler(Intention $intention);
+    public function handler(Instruction $instruction);
 
     /**
-     * Map an intention to a handler.
+     * Map an instruction to a handler.
      *
      * @param  array  $map
      * @return $this
