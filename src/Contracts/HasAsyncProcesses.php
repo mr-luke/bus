@@ -19,6 +19,7 @@ interface HasAsyncProcesses
 {
     /**
      * Return async delay.
+     *
      * @return \Carbon\Carbon|null
      */
     public function delay(): ?Carbon;

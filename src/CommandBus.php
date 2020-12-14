@@ -23,6 +23,7 @@ class CommandBus extends AbstractBus implements CommandBusContract, HasAsyncProc
 
     /**
      * @inheritDoc
+     * @codeCoverageIgnore
      */
     protected function getBusName(): string
     {

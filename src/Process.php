@@ -104,7 +104,7 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
         $this->id = $id;
         $this->bus = $bus;
         $this->process = $process;
-        $this->status = $this->verifyStatus($status);
+        $this->status = self::verifyStatus($status);
         $this->handlers = $handlers;
         $this->results = $results;
         $this->committedBy = $committedBy;
@@ -200,6 +200,7 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
 
     /**
      * @inheritDoc
+     * @codeCoverageIgnore
      */
     public function id(): string
     {
@@ -210,6 +211,7 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
      * Determine if process is already finished.
      *
      * @return bool
+     * @codeCoverageIgnore
      */
     public function isFinished(): bool
     {
@@ -220,6 +222,7 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
      * Determine if process is pending.
      *
      * @return bool
+     * @codeCoverageIgnore
      */
     public function isPending(): bool
     {
@@ -244,11 +247,12 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
             }
         }
 
-        return $aggregated === $this->handlers;
+        return $aggregated === count($this->results);
     }
 
     /**
      * @inheritDoc
+     * @codeCoverageIgnore
      */
     public function jsonSerialize(): array
     {
@@ -312,7 +316,7 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
             }
         }
 
-        return $aggregated === $this->handlers;
+        return $aggregated === count($this->results);
     }
 
     /**
@@ -322,6 +326,10 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
      */
     public function qualifyToStart(): bool
     {
+        if (!in_array($this->status, [ProcessContract::New, ProcessContract::Canceled])) {
+            return false;
+        }
+
         $aggregated = 0;
         foreach ($this->results as $h => $r) {
             if ($r['status'] === ProcessContract::New) {
@@ -329,7 +337,7 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
             }
         }
 
-        return $aggregated === $this->handlers;
+        return $aggregated === count($this->results);
     }
 
     /**
@@ -356,6 +364,7 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
      * Return actual status of the process.
      *
      * @return string
+     * @codeCoverageIgnore
      */
     public function status(): string
     {
