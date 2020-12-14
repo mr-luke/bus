@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Mrluke\Bus;
 
 use Mrluke\Bus\Contracts\CommandBus as CommandBusContract;

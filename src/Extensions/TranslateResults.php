@@ -18,6 +18,7 @@ trait TranslateResults
      *
      * @param $mixedResults
      * @return string|null
+     * @codeCoverageIgnore
      */
     protected function processResult($mixedResults): ?string
     {

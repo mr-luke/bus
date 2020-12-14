@@ -9,11 +9,11 @@ use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use JsonSerializable;
-use Mrluke\Bus\Exceptions\MissingHandler;
 use stdClass;
 
 use Mrluke\Bus\Contracts\Process as ProcessContract;
 use Mrluke\Bus\Exceptions\InvalidAction;
+use Mrluke\Bus\Exceptions\MissingHandler;
 
 /**
  * Class Process
@@ -224,6 +224,27 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
     public function isPending(): bool
     {
         return $this->status === ProcessContract::Pending;
+    }
+
+    /**
+     * Determine if the result of process is success.
+     *
+     * @return bool
+     */
+    public function isSuccessful(): bool
+    {
+        if (!$this->isFinished()) {
+            return false;
+        }
+
+        $aggregated = 0;
+        foreach ($this->results as $h => $r) {
+            if ($r['status'] === ProcessContract::Succeed) {
+                ++$aggregated;
+            }
+        }
+
+        return $aggregated === $this->handlers;
     }
 
     /**

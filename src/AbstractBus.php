@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Mrluke\Bus;
 
 use Carbon\Carbon;
@@ -111,12 +113,12 @@ abstract class AbstractBus implements Bus
         Logger $logger,
         $queueResolver = null
     ) {
-        $this->container = $container;
-        $this->queueResolver = $queueResolver;
-        $this->pipeline = $pipeline;
-        $this->logger = $logger;
-
         $this->processRepository = $repository;
+
+        $this->container = $container;
+        $this->pipeline = $pipeline;
+        $this->queueResolver = $queueResolver;
+        $this->logger = $logger;
     }
 
     /**
@@ -125,9 +127,7 @@ abstract class AbstractBus implements Bus
     public function dispatch(Instruction $instruction, bool $cleanOnSuccess = null): Process
     {
         if (!$this->hasHandler($instruction)) {
-            throw new MissingHandler(
-                sprintf('Missing handler for the instruction [%s]', get_class($instruction))
-            );
+            $this->throwOnMissingHandler($instruction);
         }
 
         $handler = $this->handler($instruction);
@@ -302,7 +302,7 @@ abstract class AbstractBus implements Bus
         $delay = $this->considerDelay($instruction);
         $queueName = $this->considerQueue($instruction);
 
-        $job = new ProcessJob($id, $instruction, $handler, $cleanOnSuccess);
+        $job = new AsyncHandlerJob($id, $instruction, $handler, $cleanOnSuccess);
         if ($queueName) {
             $job->onQueue($queueName);
         }
@@ -395,5 +395,18 @@ abstract class AbstractBus implements Bus
             $process->applyResult(get_class($handler), Process::Failed, $e->getMessage());
             $this->logger->error($e);
         }
+    }
+
+    /**
+     * Throw exception when handler is missing.
+     *
+     * @param \Mrluke\Bus\Contracts\Instruction $instruction
+     * @throws \Mrluke\Bus\Exceptions\MissingHandler
+     */
+    protected function throwOnMissingHandler(Instruction $instruction): void
+    {
+        throw new MissingHandler(
+            sprintf('Missing handler for the instruction [%s]', get_class($instruction))
+        );
     }
 }

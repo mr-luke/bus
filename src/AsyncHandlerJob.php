@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Mrluke\Bus;
 
 use Exception;
@@ -14,7 +16,7 @@ use Mrluke\Bus\Contracts\Process as ProcessContract;
 use Mrluke\Bus\Contracts\ProcessRepository;
 use Mrluke\Bus\Extensions\TranslateResults;
 
-class ProcessJob implements ShouldQueue
+class AsyncHandlerJob implements ShouldQueue
 {
     use InteractsWithQueue, Queueable, TranslateResults;
 
@@ -54,7 +56,7 @@ class ProcessJob implements ShouldQueue
         string $processId,
         Instruction $instruction,
         Handler $handler,
-        bool $cleanOnSuccess,
+        bool $cleanOnSuccess
     ) {
         $this->cleanOnSuccess = $cleanOnSuccess;
         $this->instruction = $instruction;
