@@ -160,10 +160,10 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
     /**
      * Create new process.
      *
-     * @param string $busName
-     * @param string $process
-     * @param array  $handlers
-     * @param int    $auth
+     * @param string   $busName
+     * @param string   $process
+     * @param array    $handlers
+     * @param int|null $auth
      * @return \Mrluke\Bus\Contracts\Process
      * @throws \Mrluke\Bus\Exceptions\InvalidAction
      */
@@ -171,7 +171,7 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
         string $busName,
         string $process,
         array $handlers,
-        int $auth
+        ?int $auth
     ): ProcessContract {
         if (array_keys($handlers) !== range(0, count($handlers) - 1) || !is_string($handlers[0])) {
             throw new InvalidArgumentException(
@@ -288,6 +288,16 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
      */
     public static function fromDatabase(stdClass $model): ProcessContract
     {
+        $toCheck = ['committed_at', 'started_at', 'finished_at'];
+
+        foreach ($toCheck as $f) {
+            if ($model->{$f} !== null && ($model->{$f} >> 40) < 1) {
+                throw new InvalidArgumentException(
+                    sprintf('Model property [%s] requires microtime precision.', $f)
+                );
+            }
+        }
+
         return new self(
             $model->id,
             $model->bus,
@@ -296,9 +306,9 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
             (int)$model->handlers,
             json_decode($model->results, true),
             $model->committed_by,
-            CarbonImmutable::createFromTimestamp($model->commited_at),
-            $model->started_at ? CarbonImmutable::createFromTimestamp($model->started_at) : null,
-            $model->finished_at ? CarbonImmutable::createFromTimestamp($model->finished_at) : null
+            CarbonImmutable::createFromTimestampMs($model->committed_at),
+            $model->started_at ? CarbonImmutable::createFromTimestampMs($model->started_at) : null,
+            $model->finished_at ? CarbonImmutable::createFromTimestampMs($model->finished_at) : null
         );
     }
 
