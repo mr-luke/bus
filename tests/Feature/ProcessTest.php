@@ -14,6 +14,8 @@ use Mrluke\Bus\Process;
 
 class ProcessTest extends TestCase
 {
+    const HandlerName = 'Handler';
+
     public function testIfCancelSetsCorrectStatusWithTimestamp()
     {
         $carbon = $this->buildCarbonMock();
@@ -159,19 +161,9 @@ class ProcessTest extends TestCase
 
     public function testIfFromDatabaseReturnsProcessCorrectlyTranslatedFromStdclass()
     {
-        $model = new stdClass();
-        $model->id = 'id';
-        $model->bus = 'bus';
-        $model->process = 'Process';
-        $model->status = ProcessContract::Pending;
-        $model->handlers = 1;
-        $model->results = '{"Handler":{"status":"' . ProcessContract::Pending . '"}}';
-        $model->committed_by = 1;
-        $model->committed_at = 1607857526000;
-        $model->started_at = 1607857566000;
-        $model->finished_at = null;
-
-        $process = Process::fromDatabase($model);
+        $process = Process::fromDatabase(
+            self::createCorrectModel('id')
+        );
 
         $this->assertInstanceOf(
             ProcessContract::class,
@@ -185,7 +177,7 @@ class ProcessTest extends TestCase
                 'status'      => ProcessContract::Pending,
                 'handlers'    => 1,
                 'results'     => [
-                    'Handler' => ['status' => ProcessContract::Pending]
+                    self::HandlerName => ['status' => ProcessContract::Pending]
                 ],
                 'committedBy' => 1,
                 'committedAt' => 1607857526000,
@@ -248,6 +240,32 @@ class ProcessTest extends TestCase
         $this->assertTrue(
             Carbon::createFromTimestampMs($startedAt)->isSameMinute()
         );
+    }
+
+    /**
+     * Create stdClass model of correct data.
+     *
+     * @param string $id
+     * @param string $status
+     * @return \stdClass
+     */
+    public static function createCorrectModel(
+        string $id,
+        string $status = ProcessContract::Pending
+    ): stdClass {
+        $model = new stdClass();
+        $model->id = $id;
+        $model->bus = 'bus';
+        $model->process = 'Process';
+        $model->status = $status;
+        $model->handlers = 1;
+        $model->results = '{"' . self::HandlerName . '":{"status":"' . $status . '"}}';
+        $model->committed_by = 1;
+        $model->committed_at = 1607857526000;
+        $model->started_at = 1607857566000;
+        $model->finished_at = null;
+
+        return $model;
     }
 
     /**

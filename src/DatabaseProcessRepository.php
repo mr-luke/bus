@@ -8,6 +8,7 @@ use Exception;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Str;
 use Mrluke\Configuration\Contracts\ArrayHost;
 
 use Mrluke\Bus\Contracts\Process;
@@ -126,8 +127,14 @@ class DatabaseProcessRepository implements ProcessRepository
 
         $process = \Mrluke\Bus\Process::create($busName, $process, $handlers, $this->guard->id());
 
-        $payload = $process->toArray();
-        $payload['results'] = json_encode($payload['results']);
+        $payload = [];
+        foreach ($process->toArray() as $k => $v) {
+            $payload[Str::snake($k)] = $v;
+
+            if ($k == 'results') {
+                $payload[$k] = json_encode($payload[$k]);
+            }
+        }
 
         if (!$this->getBuilder()->insert($payload)) {
             throw new Exception('Creating new process failed.');
