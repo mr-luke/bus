@@ -57,14 +57,16 @@ class CreateBusProcessesTable extends Migration
                 $table->unsignedInteger('handlers')->default(1);
                 $table->json('results')->nullable();
                 $table->{$this->config->get('users.primary.type')}('committed_by')->nullable();
-                $table->timestamp('committed_at', 6);
-                $table->timestamp('started_at', 6)->nullable();
-                $table->timestamp('finished_at', 6)->nullable();
+                $table->unsignedBigInteger('committed_at');
+                $table->unsignedBigInteger('started_at')->nullable();
+                $table->unsignedBigInteger('finished_at')->nullable();
 
-                $table->foreign('committed_by')
-                    ->references($this->config->get('users.primary.name'))
-                    ->on($this->config->get('users.table'))
-                    ->onDelete('SET NULL');
+                if ($tableName = $this->config->get('users.table')) {
+                    $table->foreign('committed_by')
+                        ->references($this->config->get('users.primary.name'))
+                        ->on($tableName)
+                        ->onDelete('SET NULL');
+                }
             }
         );
     }
@@ -76,14 +78,16 @@ class CreateBusProcessesTable extends Migration
      */
     public function down()
     {
-        Schema::table(
-            $this->config->get('table'),
-            function(Blueprint $table) {
-                $table->dropForeign(
-                   $this->config->get('table') . '_committed_by_foreign'
-                );
-            }
-        );
+        if ($tableName = $this->config->get('users.table')) {
+            Schema::table(
+                $this->config->get('table'),
+                function(Blueprint $table) {
+                    $table->dropForeign(
+                       $this->config->get('table') . '_committed_by_foreign'
+                    );
+                }
+            );
+        }
 
         Schema::dropIfExists($this->config->get('table'));
     }

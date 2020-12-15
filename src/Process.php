@@ -396,9 +396,9 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
             'handlers'    => $this->handlers,
             'results'     => $this->results,
             'committedBy' => $this->committedBy,
-            'committedAt' => (int)$this->committedAt->valueOf(),
-            'startedAt'   => $this->startedAt ? (int)$this->startedAt->valueOf() : null,
-            'finishedAt'  => $this->finishedAt ? (int)$this->finishedAt->valueOf() : null
+            'committedAt' => $this->committedAt->getPreciseTimestamp(3),
+            'startedAt'   => $this->startedAt ? $this->startedAt->getPreciseTimestamp(3) : null,
+            'finishedAt'  => $this->finishedAt ? $this->finishedAt->getPreciseTimestamp(3) : null
         ];
     }
 

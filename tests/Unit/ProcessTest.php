@@ -65,7 +65,7 @@ class ProcessTest extends TestCase
     {
         $carbon = $this->buildCarbonMock();
         /* @var \PHPUnit\Framework\MockObject\MockObject $carbon */
-        $carbon->expects($this->once())->method('valueOf')->willReturn(1.234567E7);
+        $carbon->expects($this->once())->method('getPreciseTimestamp')->willReturn(1234567890);
 
         /* @var CarbonImmutable $carbon */
         $process = new Process(
@@ -88,7 +88,7 @@ class ProcessTest extends TestCase
                 'handlers'    => 1,
                 'results'     => ['Handler'],
                 'committedBy' => null,
-                'committedAt' => 12345670,
+                'committedAt' => 1234567890,
                 'startedAt'   => null,
                 'finishedAt'  => null
             ],
