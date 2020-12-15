@@ -4,11 +4,12 @@ namespace Tests\Feature;
 
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
+use stdClass;
 
 use Mrluke\Bus\Contracts\Process as ProcessContract;
 use Mrluke\Bus\Exceptions\InvalidAction;
-use Mrluke\Bus\Exceptions\MissingHandler;
 use Mrluke\Bus\Process;
 
 class ProcessTest extends TestCase
@@ -42,11 +43,47 @@ class ProcessTest extends TestCase
         );
     }
 
-//    public function testCreate()
-//    {
-//
-//    }
-//
+    public function testIfCreateThrowsWhenNoHandlerProvided()
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        Process::create('bus', 'Process', [], 1);
+    }
+
+    public function testIfCreateComposeProperProcess()
+    {
+        $process = Process::create('bus', 'Process', ['Handler'], null);
+
+        $this->assertInstanceOf(
+            ProcessContract::class,
+            $process
+        );
+
+        $this->assertRegExp(
+            '/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/',
+            $process->id()
+        );
+
+        $actualData = $process->toArray();
+        unset($actualData['id']);
+        unset($actualData['committedAt']);
+        $this->assertEquals(
+            [
+                'bus'         => 'bus',
+                'process'     => 'Process',
+                'status'      => ProcessContract::New,
+                'handlers'    => 1,
+                'results'     => [
+                    'Handler' => ['status' => ProcessContract::New]
+                ],
+                'committedBy' => null,
+                'startedAt'   => null,
+                'finishedAt'  => null
+            ],
+            $actualData
+        );
+    }
+
     public function testIfThrowsWhenTryingToFinishPendingProcess()
     {
         $this->expectException(InvalidAction::class);
@@ -101,15 +138,117 @@ class ProcessTest extends TestCase
         );
     }
 
-//    public function testStart()
-//    {
-//
-//    }
-//
-//    public function testFromDatabase()
-//    {
-//
-//    }
+    public function testIfFromDatabaseThrowsWhenTimestampHasNotEnoughPrecision()
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        $model = new stdClass();
+        $model->id = 'id';
+        $model->bus = 'bus';
+        $model->process = 'Process';
+        $model->status = ProcessContract::New;
+        $model->handlers = 1;
+        $model->results = '{"Handler":{"status":"' . ProcessContract::New . '"}}';
+        $model->committed_by = 1;
+        $model->committed_at = 1607857526;
+        $model->started_at = null;
+        $model->finished_at = null;
+
+        Process::fromDatabase($model);
+    }
+
+    public function testIfFromDatabaseReturnsProcessCorrectlyTranslatedFromStdclass()
+    {
+        $model = new stdClass();
+        $model->id = 'id';
+        $model->bus = 'bus';
+        $model->process = 'Process';
+        $model->status = ProcessContract::Pending;
+        $model->handlers = 1;
+        $model->results = '{"Handler":{"status":"' . ProcessContract::Pending . '"}}';
+        $model->committed_by = 1;
+        $model->committed_at = 1607857526000;
+        $model->started_at = 1607857566000;
+        $model->finished_at = null;
+
+        $process = Process::fromDatabase($model);
+
+        $this->assertInstanceOf(
+            ProcessContract::class,
+            $process
+        );
+        $this->assertEquals(
+            [
+                'id'          => 'id',
+                'bus'         => 'bus',
+                'process'     => 'Process',
+                'status'      => ProcessContract::Pending,
+                'handlers'    => 1,
+                'results'     => [
+                    'Handler' => ['status' => ProcessContract::Pending]
+                ],
+                'committedBy' => 1,
+                'committedAt' => 1607857526000,
+                'startedAt'   => 1607857566000,
+                'finishedAt'  => null
+            ],
+            $process->toArray()
+        );
+    }
+
+    public function testIfStartThrowsWhenProcessCannotBeStarted()
+    {
+        $this->expectException(InvalidAction::class);
+
+        $carbon = $this->buildCarbonMock();
+        $results = [
+            'Handler'  => ['status' => ProcessContract::Succeed],
+            'Handler2' => ['status' => ProcessContract::New],
+            'Handler3' => ['status' => ProcessContract::New]
+        ];
+
+        $process = new Process(
+            'id',
+            'bus',
+            'Process',
+            ProcessContract::Pending,
+            count($results),
+            $results,
+            null,
+            $carbon
+        );
+
+        $process->start();
+    }
+
+    public function testIfStartSetsCorrectStatusWhenProcessQualifyToStart()
+    {
+        $carbon = $this->buildCarbonMock();
+        $results = [
+            'Handler'  => ['status' => ProcessContract::New],
+            'Handler2' => ['status' => ProcessContract::New],
+            'Handler3' => ['status' => ProcessContract::New]
+        ];
+
+        $process = new Process(
+            'id',
+            'bus',
+            'Process',
+            ProcessContract::New,
+            count($results),
+            $results,
+            null,
+            $carbon
+        );
+
+        $startedAt = $process->start();
+
+        $this->assertIsInt($startedAt);
+        $this->assertEquals(ProcessContract::Pending, $process->status());
+        $this->assertTrue(
+            Carbon::createFromTimestampMs($startedAt)->isSameMinute()
+        );
+    }
 
     /**
      * Return Carbon mock.
