@@ -6,19 +6,20 @@ namespace Mrluke\Bus;
 
 use Exception;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Log\Logger;
 use Illuminate\Queue\InteractsWithQueue;
 
-use Mrluke\Bus\Contracts\Handler;
 use Mrluke\Bus\Contracts\Instruction;
 use Mrluke\Bus\Contracts\Process as ProcessContract;
 use Mrluke\Bus\Contracts\ProcessRepository;
+use Mrluke\Bus\Extensions\ResolveDependencies;
 use Mrluke\Bus\Extensions\TranslateResults;
 
 class AsyncHandlerJob implements ShouldQueue
 {
-    use InteractsWithQueue, Queueable, TranslateResults;
+    use InteractsWithQueue, Queueable, ResolveDependencies, TranslateResults;
 
     /** Determine if process should be delete on success.
      *
@@ -36,7 +37,7 @@ class AsyncHandlerJob implements ShouldQueue
      *
      * @var \Mrluke\Bus\Contracts\Handler
      */
-    protected $handler;
+    protected $handlerClass;
 
     /**
      * The process id.
@@ -48,42 +49,52 @@ class AsyncHandlerJob implements ShouldQueue
     /**
      * @param string                            $processId
      * @param \Mrluke\Bus\Contracts\Instruction $instruction
-     * @param \Mrluke\Bus\Contracts\Handler     $handler
+     * @param string                            $handlerClass
      * @param bool                              $cleanOnSuccess
      * @retuen void
      */
     public function __construct(
         string $processId,
         Instruction $instruction,
-        Handler $handler,
+        string $handlerClass,
         bool $cleanOnSuccess
     ) {
         $this->cleanOnSuccess = $cleanOnSuccess;
         $this->instruction = $instruction;
-        $this->handler = $handler;
+        $this->handlerClass = $handlerClass;
         $this->processId = $processId;
     }
 
     /**
      * Process handler in async way.
      *
-     * @param \Mrluke\Bus\Contracts\ProcessRepository $repository
-     * @param \Illuminate\Log\Logger                  $logger
+     * @param \Mrluke\Bus\Contracts\ProcessRepository   $repository
+     * @param \Illuminate\Contracts\Container\Container $container
+     * @param \Illuminate\Log\Logger                    $logger
      * @return void
+     * @throws \Illuminate\Contracts\Container\BindingResolutionException
      * @throws \Mrluke\Bus\Exceptions\InvalidAction
      * @throws \Mrluke\Bus\Exceptions\MissingHandler
      * @throws \Mrluke\Bus\Exceptions\MissingProcess
+     * @throws \ReflectionException
      */
-    public function handle(ProcessRepository $repository, Logger $logger)
+    public function handle(ProcessRepository $repository, Container $container, Logger $logger)
     {
+        $handler = $this->resolveClass($container, $this->handlerClass);
+        $process = $repository->find($this->processId);
+
         try {
+            if (!$process->isPending()) {
+                $repository->start($this->processId);
+            }
+
             $result = $this->processResult(
-                $this->handler->handle($this->instruction)
+                $handler->handle($this->instruction)
             );
 
             $process = $repository->applySubResult(
                 $this->processId,
-                get_class($this->handler),
+                $this->handlerClass,
                 ProcessContract::Succeed,
                 $result
             );
@@ -92,15 +103,15 @@ class AsyncHandlerJob implements ShouldQueue
                 'Async handler succeed.',
                 [
                     'process' => $this->processId,
-                    'handler' => get_class($this->handler),
+                    'handler' => $this->handlerClass,
                     'result'  => $result
                 ]
             );
 
-        } catch (Exception $e) {
+        }  catch (Exception $e) {
             $process = $repository->applySubResult(
                 $this->processId,
-                get_class($this->handler),
+                $this->handlerClass,
                 ProcessContract::Failed,
                 $e->getMessage()
             );

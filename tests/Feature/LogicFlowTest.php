@@ -6,12 +6,17 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
+use Mrluke\Bus\Contracts\CommandBus;
 use Mrluke\Bus\Contracts\Config;
 use Mrluke\Bus\Contracts\Process;
 use Mrluke\Bus\Contracts\ProcessRepository;
+use Mrluke\Bus\Exceptions\MissingConfiguration;
 use Tests\AppCase;
+use Tests\Components\AsyncHelloCommand;
+use Tests\Components\ErrorHandler;
 use Tests\Components\HelloCommand;
 use Tests\Components\HelloHandler;
+use Tests\Components\SyncBus;
 
 class LogicFlowTest extends AppCase
 {
@@ -106,6 +111,146 @@ class LogicFlowTest extends AppCase
                 ->where('id', $id)->where('status', Process::Finished)
                 ->whereNotNull('finished_at')
                 ->exists()
+        );
+    }
+
+    public function testSyncCommandDispatchingWithoutClearing()
+    {
+        $config = $this->app->make(Config::class);
+
+        /* @var CommandBus $bus */
+        $bus = $this->app->make(CommandBus::class);
+        $bus->map([HelloCommand::class => HelloHandler::class]);
+
+        $process = $bus->dispatch(
+            new HelloCommand('Hello world'),
+            false
+        );
+
+        $this->assertInstanceOf(
+            Process::class,
+            $process
+        );
+
+        $this->assertEquals(
+            Process::Finished,
+            $process->status()
+        );
+
+        $this->assertEquals(
+            [HelloHandler::class => ['status' => Process::Succeed, 'feedback' => 'Hello world']],
+            $process->toArray()['results']
+        );
+
+        $this->assertTrue(
+            DB::table($config->get('table'))->where('id', $process->id())->exists()
+        );
+    }
+
+    public function testSyncCommandDispatchingWithClearing()
+    {
+        $config = $this->app->make(Config::class);
+
+        /* @var CommandBus $bus */
+        $bus = $this->app->make(CommandBus::class);
+        $bus->map([HelloCommand::class => HelloHandler::class]);
+
+        $process = $bus->dispatch(
+            new HelloCommand('Hello new world'),
+            true
+        );
+
+        $this->assertInstanceOf(
+            Process::class,
+            $process
+        );
+
+        $this->assertEquals(
+            Process::Finished,
+            $process->status()
+        );
+
+        $this->assertEquals(
+            [HelloHandler::class => ['status' => Process::Succeed, 'feedback' => 'Hello new world']],
+            $process->toArray()['results']
+        );
+
+        $this->assertTrue(
+            !DB::table($config->get('table'))->where('id', $process->id())->exists()
+        );
+    }
+
+    public function testSyncCommandDispatchingWithFail()
+    {
+        $config = $this->app->make(Config::class);
+
+        /* @var CommandBus $bus */
+        $bus = $this->app->make(CommandBus::class);
+        $bus->map([HelloCommand::class => ErrorHandler::class]);
+
+        $process = $bus->dispatch(
+            new HelloCommand('An exception'),
+            true
+        );
+
+        $this->assertInstanceOf(
+            Process::class,
+            $process
+        );
+
+        $this->assertEquals(
+            Process::Finished,
+            $process->status()
+        );
+
+        $this->assertEquals(
+            [ErrorHandler::class => ['status' => Process::Failed, 'feedback' => 'An exception']],
+            $process->toArray()['results']
+        );
+
+        $this->assertTrue(
+            !DB::table($config->get('table'))->where('id', $process->id())->exists()
+        );
+    }
+
+    public function testAsyncCommandDispatching()
+    {
+        /* @var CommandBus $bus */
+        $bus = $this->app->make(CommandBus::class);
+        $bus->map([AsyncHelloCommand::class => HelloHandler::class]);
+
+        $process = $bus->dispatch(
+            new AsyncHelloCommand('Hello new world'),
+            true
+        );
+
+        $this->assertInstanceOf(
+            Process::class,
+            $process
+        );
+
+        $this->assertEquals(
+            Process::New,
+            $process->status()
+        );
+
+        $this->assertEquals(
+            [HelloHandler::class => ['status' => Process::New]],
+            $process->toArray()['results']
+        );
+    }
+
+    public function testIfSyncBusThrowsWhenGotAsyncCommand()
+    {
+        $this->expectException(MissingConfiguration::class);
+
+        /* @var \Mrluke\Bus\Contracts\Bus $bus */
+        $bus = $this->app->make(SyncBus::class);
+        $bus->map([AsyncHelloCommand::class => HelloHandler::class]);
+
+        $bus->dispatch(
+            new AsyncHelloCommand('Hello new world'),
+            true
         );
     }
 }

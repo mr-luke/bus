@@ -44,6 +44,7 @@ interface Bus
      * @param \Mrluke\Bus\Contracts\Instruction $instruction
      * @return \Mrluke\Bus\Contracts\Handler|\Mrluke\Bus\Contracts\Handler[]
      * @throws \Mrluke\Bus\Exceptions\InvalidHandler
+     * @throws \Mrluke\Bus\Exceptions\MissingHandler
      * @throws \ReflectionException
      */
     public function handler(Instruction $instruction);

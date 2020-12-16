@@ -2,9 +2,9 @@
 
 namespace Tests\Components;
 
+use Exception;
 use Mrluke\Bus\Contracts\Handler;
 use Mrluke\Bus\Contracts\Instruction;
-use Mrluke\Bus\Contracts\ProcessRepository;
 
 /**
  * Class HelloHandler
@@ -15,17 +15,13 @@ use Mrluke\Bus\Contracts\ProcessRepository;
  * @package Tests\Components
  * @codeCoverageIgnore
  */
-class HelloHandler implements Handler
+class ErrorHandler implements Handler
 {
-    public function __construct(ProcessRepository $repository) {
-        $this->repository = $repository;
-    }
-
     /**
      * @inheritDoc
      */
     public function handle(Instruction $instruction)
     {
-        return $instruction->greeting;
+        throw new Exception($instruction->greeting);
     }
 }
