@@ -62,6 +62,7 @@ final class BusServiceProvider extends ServiceProvider
             function($job, $app) {
                 return $job->handle(
                     $app->make(ProcessRepository::class),
+                    $app->make(Container::class),
                     $app->make(Logger::class)
                 );
             }

@@ -18,6 +18,7 @@ interface Handler
      *
      * @param  \Mrluke\Bus\Contracts\Instruction $instruction
      * @return mixed
+     * @throws \Exception
      */
     public function handle(Instruction $instruction);
 }

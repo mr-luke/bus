@@ -10,6 +10,7 @@ use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\Queue\Queue;
 use Illuminate\Log\Logger;
 use Illuminate\Pipeline\Pipeline;
+use Mrluke\Bus\Extensions\ResolveDependencies;
 use ReflectionClass;
 
 use Mrluke\Bus\Contracts\Bus;
@@ -35,7 +36,7 @@ use Mrluke\Bus\Extensions\TranslateResults;
  */
 abstract class AbstractBus implements Bus
 {
-    use TranslateResults;
+    use ResolveDependencies, TranslateResults;
 
     /** Determine if process should be delete on success.
      *
@@ -132,7 +133,7 @@ abstract class AbstractBus implements Bus
 
         $handler = $this->handler($instruction);
 
-        if ($instruction instanceof ShouldBeAsync && $this instanceof HasAsyncProcesses) {
+        if ($instruction instanceof ShouldBeAsync) {
             /** @var Instruction $instruction */
             return $this->runAsync(
                 $instruction,
@@ -146,6 +147,7 @@ abstract class AbstractBus implements Bus
 
     /**
      * @inheritDoc
+     * @codeCoverageIgnore
      */
     public function hasHandler(Instruction $instruction): bool
     {
@@ -157,6 +159,12 @@ abstract class AbstractBus implements Bus
      */
     public function handler(Instruction $instruction)
     {
+        if (!$this->hasHandler($instruction)) {
+            throw new MissingHandler(
+                sprintf('Given instruction [%s] is not registered.', get_class($instruction))
+            );
+        }
+
         $handler = $this->handlers[get_class($instruction)];
 
         if (is_array($handler)) {
@@ -172,9 +180,11 @@ abstract class AbstractBus implements Bus
 
         if (
             !$reflection->isInstantiable() ||
-            !in_array(Handler::class, $reflection->getInterfaces())
+            !$reflection->implementsInterface(Handler::class)
         ) {
-            throw new InvalidHandler('Handler must be an instance of %s', Handler::class);
+            throw new InvalidHandler(
+                sprintf('Handler must be an instance of %s', Handler::class)
+            );
         }
 
         return $handler;
@@ -182,6 +192,7 @@ abstract class AbstractBus implements Bus
 
     /**
      * @inheritDoc
+     * @codeCoverageIgnore
      */
     public function map(array $map): Bus
     {
@@ -192,6 +203,7 @@ abstract class AbstractBus implements Bus
 
     /**
      * @inheritDoc
+     * @codeCoverageIgnore
      */
     public function pipeThrough(array $pipes): Bus
     {
@@ -216,19 +228,10 @@ abstract class AbstractBus implements Bus
      *
      * @param \Mrluke\Bus\Contracts\Instruction $instruction
      * @return Carbon|null
-     * @throws \Mrluke\Bus\Exceptions\MissingConfiguration
      */
-    protected function considerDelay(Instruction $instruction): ?string
+    protected function considerDelay(Instruction $instruction): ?Carbon
     {
-        if (!$this instanceof HasAsyncProcesses) {
-            throw new MissingConfiguration(
-                sprintf(
-                    'To use async instructions Bus has to be an instance of [%s]',
-                    HasAsyncProcesses::class
-                )
-            );
-        }
-
+        /* @var HasAsyncProcesses $this */
         return property_exists($instruction, 'delay') ? $instruction->delay : $this->delay();
     }
 
@@ -237,19 +240,10 @@ abstract class AbstractBus implements Bus
      *
      * @param \Mrluke\Bus\Contracts\Instruction $instruction
      * @return string|null
-     * @throws \Mrluke\Bus\Exceptions\MissingConfiguration
      */
     protected function considerQueue(Instruction $instruction): ?string
     {
-        if (!$this instanceof HasAsyncProcesses) {
-            throw new MissingConfiguration(
-                sprintf(
-                    'To use async instructions Bus has to be an instance of [%s]',
-                    HasAsyncProcesses::class
-                )
-            );
-        }
-
+        /* @var HasAsyncProcesses $this */
         return property_exists($instruction, 'queue') ? $instruction->queue : $this->onQueue();
     }
 
@@ -283,26 +277,32 @@ abstract class AbstractBus implements Bus
      *
      * @param string                            $id
      * @param \Mrluke\Bus\Contracts\Instruction $instruction
-     * @param \Mrluke\Bus\Contracts\Handler     $handler
+     * @param string                            $handlerClass
      * @param bool                              $cleanOnSuccess
      * @throws \Mrluke\Bus\Exceptions\MissingConfiguration
      */
     protected function pushInstructionToQueue(
         string $id,
         Instruction $instruction,
-        Handler $handler,
+        string $handlerClass,
         bool $cleanOnSuccess
     ): void {
-        $queue = call_user_func($this->queueResolver, $this->queueConnection);
-
-        if (!$queue instanceof Queue) {
-            throw new MissingConfiguration('Queue resolver did not return a Queue implementation.');
+        if (!$this instanceof HasAsyncProcesses) {
+            throw new MissingConfiguration(
+                sprintf(
+                    'To use async instructions Bus has to be an instance of [%s]',
+                    HasAsyncProcesses::class
+                )
+            );
         }
+
+        $queue = call_user_func($this->queueResolver, $this->queueConnection);
+        $this->verifyQueueInstance($queue);
 
         $delay = $this->considerDelay($instruction);
         $queueName = $this->considerQueue($instruction);
 
-        $job = new AsyncHandlerJob($id, $instruction, $handler, $cleanOnSuccess);
+        $job = new AsyncHandlerJob($id, $instruction, $handlerClass, $cleanOnSuccess);
         if ($queueName) {
             $job->onQueue($queueName);
         }
@@ -324,14 +324,18 @@ abstract class AbstractBus implements Bus
      * @throws \Illuminate\Contracts\Container\BindingResolutionException
      * @throws \Mrluke\Bus\Exceptions\InvalidAction
      * @throws \Mrluke\Bus\Exceptions\MissingHandler
+     * @throws \ReflectionException
      */
     protected function run(Instruction $instruction, string $handlerClass, bool $clean): Process
     {
-        $handler = $this->container->make($handlerClass);
         $process = $this->createProcess($instruction, $handlerClass);
 
         $process->start();
-        $this->runSingleProcess($process, $instruction, $handler);
+        $this->runSingleProcess(
+            $process,
+            $instruction,
+            $this->resolveClass($this->container, $handlerClass)
+        );
         $process->finish();
 
         if ($clean) {
@@ -345,7 +349,7 @@ abstract class AbstractBus implements Bus
      * Run handler asynchronously.
      *
      * @param \Mrluke\Bus\Contracts\Instruction $instruction
-     * @param \Mrluke\Bus\Contracts\Handler     $handler
+     * @param string                            $handlerClass
      * @param bool                              $clean
      * @return \Mrluke\Bus\Contracts\Process
      * @throws \Mrluke\Bus\Exceptions\InvalidAction
@@ -353,11 +357,17 @@ abstract class AbstractBus implements Bus
      */
     protected function runAsync(
         Instruction $instruction,
-        Handler $handler,
+        string $handlerClass,
         bool $clean
     ): Process {
-        $process = $this->createProcess($instruction, $handler);
-        $this->pushInstructionToQueue($process->id(), $instruction, $handler, $clean);
+        $process = $this->createProcess($instruction, $handlerClass);
+
+        $this->pushInstructionToQueue(
+            $process->id(),
+            $instruction,
+            $handlerClass,
+            $clean
+        );
 
         return $process;
     }
@@ -408,5 +418,20 @@ abstract class AbstractBus implements Bus
         throw new MissingHandler(
             sprintf('Missing handler for the instruction [%s]', get_class($instruction))
         );
+    }
+
+    /**
+     * Verify if given queue is proper instance.
+     *
+     * @param $queue
+     * @return void
+     * @throws \Mrluke\Bus\Exceptions\MissingConfiguration
+     * @codeCoverageIgnore
+     */
+    private function verifyQueueInstance($queue): void
+    {
+        if (!$queue instanceof Queue) {
+            throw new MissingConfiguration('Queue resolver did not return a Queue implementation.');
+        }
     }
 }

@@ -27,6 +27,7 @@ use Mrluke\Bus\Exceptions\InvalidHandler;
  *
  * @method Process createProcess(Instruction $instruction, array $handlers)
  * @method Process pushInstructionToQueue($id, Instruction $instruction, $handler, $cleanOnSuccess)
+ * @method mixed resolveClass($container, string $className)
  * @method void runSingleProcess(Process $process, Instruction $instruction, Handler $handler)
  */
 trait FiresMultipleHandlers
@@ -73,6 +74,7 @@ trait FiresMultipleHandlers
      * @return \Mrluke\Bus\Contracts\Process
      * @throws \Illuminate\Contracts\Container\BindingResolutionException
      * @throws \Mrluke\Bus\Exceptions\InvalidAction
+     * @throws \ReflectionException
      */
     protected function run(Instruction $instruction, array $handlerClasses, bool $clean): Process
     {
@@ -80,7 +82,11 @@ trait FiresMultipleHandlers
 
         $process->start();
         foreach ($handlerClasses as $class) {
-            $this->runSingleProcess($process, $instruction, $this->container->make($class));
+            $this->runSingleProcess(
+                $process,
+                $instruction,
+                $this->resolveClass($this->container, $class)
+            );
         }
         $process->finish();
 
@@ -98,6 +104,7 @@ trait FiresMultipleHandlers
      * @param array                             $handlerClasses
      * @param bool                              $clean
      * @return \Mrluke\Bus\Contracts\Process
+     * @throws \Mrluke\Bus\Exceptions\InvalidAction
      */
     protected function runAsync(
         Instruction $instruction,
@@ -107,7 +114,12 @@ trait FiresMultipleHandlers
         $process = $this->createProcess($instruction, $handlerClasses);
 
         foreach ($handlerClasses as $class) {
-            $this->pushInstructionToQueue($process->id(), $instruction, $class, $clean);
+            $this->pushInstructionToQueue(
+                $process->id(),
+                $instruction,
+                $class,
+                $clean
+            );
         }
 
         return $process;
