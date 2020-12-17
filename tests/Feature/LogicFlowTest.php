@@ -3,9 +3,14 @@
 namespace Tests\Feature;
 
 use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Container\Container;
+use Illuminate\Contracts\Queue\Factory;
+use Illuminate\Log\Logger;
+use Illuminate\Pipeline\Pipeline;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
+use Mrluke\Bus\AsyncHandlerJob;
 use Mrluke\Bus\Contracts\CommandBus;
 use Mrluke\Bus\Contracts\Config;
 use Mrluke\Bus\Contracts\Process;
@@ -16,6 +21,7 @@ use Tests\Components\AsyncHelloCommand;
 use Tests\Components\ErrorHandler;
 use Tests\Components\HelloCommand;
 use Tests\Components\HelloHandler;
+use Tests\Components\MultiBus;
 use Tests\Components\SyncBus;
 
 class LogicFlowTest extends AppCase
@@ -213,6 +219,47 @@ class LogicFlowTest extends AppCase
         );
     }
 
+    public function testAsyncCommandDispatchesJob()
+    {
+        $this->expectsJobs(AsyncHandlerJob::class);
+
+        /* @var CommandBus $bus */
+        $bus = $this->app->make(CommandBus::class);
+        $bus->map([AsyncHelloCommand::class => HelloHandler::class]);
+
+        $bus->dispatch(
+            new AsyncHelloCommand('Hello new world'),
+            true
+        );
+    }
+
+    public function testAsyncCommandDoesntThrowOnFail()
+    {
+        /* @var CommandBus $bus */
+        $bus = $this->app->make(CommandBus::class);
+        $bus->map([AsyncHelloCommand::class => ErrorHandler::class]);
+
+        $process = $bus->dispatch(
+            new AsyncHelloCommand('Hello new world'),
+            true
+        );
+
+        $this->assertInstanceOf(
+            Process::class,
+            $process
+        );
+
+        $this->assertEquals(
+            Process::New,
+            $process->status()
+        );
+
+        $this->assertEquals(
+            [ErrorHandler::class => ['status' => Process::New]],
+            $process->toArray()['results']
+        );
+    }
+
     public function testAsyncCommandDispatching()
     {
         /* @var CommandBus $bus */
@@ -247,6 +294,74 @@ class LogicFlowTest extends AppCase
         /* @var \Mrluke\Bus\Contracts\Bus $bus */
         $bus = $this->app->make(SyncBus::class);
         $bus->map([AsyncHelloCommand::class => HelloHandler::class]);
+
+        $bus->dispatch(
+            new AsyncHelloCommand('Hello new world'),
+            true
+        );
+    }
+
+    public function testSyncCommandFiresMultipleHandlers()
+    {
+        $config = $this->app->make(Config::class);
+
+        /* @var CommandBus $bus */
+        $bus = new MultiBus(
+            $this->app->make(ProcessRepository::class),
+            $this->app->make(Container::class),
+            new Pipeline($this->app),
+            $this->app->make(Logger::class),
+            null
+        );
+
+        $bus->map([HelloCommand::class => [HelloHandler::class, ErrorHandler::class]]);
+
+        $process = $bus->dispatch(
+            new HelloCommand('Hello new world'),
+            true
+        );
+
+        $this->assertInstanceOf(
+            Process::class,
+            $process
+        );
+
+        $this->assertEquals(
+            Process::Finished,
+            $process->status()
+        );
+
+        $this->assertEquals(
+            [
+                HelloHandler::class => ['status' => Process::Succeed, 'feedback' => 'Hello new world'],
+                ErrorHandler::class => ['status' => Process::Failed, 'feedback' => 'Hello new world']
+            ],
+            $process->toArray()['results']
+        );
+
+        $this->assertTrue(
+            !DB::table($config->get('table'))->where('id', $process->id())->exists()
+        );
+    }
+
+    public function testAsyncCommandFiresMultipleHandlers()
+    {
+        $this->expectsJobs([AsyncHandlerJob::class, AsyncHandlerJob::class]);
+
+        $container = $this->app->make(Container::class);
+
+        /* @var CommandBus $bus */
+        $bus = new MultiBus(
+            $this->app->make(ProcessRepository::class),
+            $container,
+            new Pipeline($this->app),
+            $this->app->make(Logger::class),
+            function($connection = null) use ($container) {
+                return $container->make(Factory::class)->connection($connection);
+            }
+        );
+
+        $bus->map([AsyncHelloCommand::class => [HelloHandler::class, ErrorHandler::class]]);
 
         $bus->dispatch(
             new AsyncHelloCommand('Hello new world'),

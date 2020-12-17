@@ -2,6 +2,7 @@
 
 namespace Mrluke\Bus\Extensions;
 
+use Mrluke\Bus\Exceptions\MissingHandler;
 use ReflectionClass;
 
 use Mrluke\Bus\Contracts\Handler;
@@ -26,6 +27,7 @@ use Mrluke\Bus\Exceptions\InvalidHandler;
  * @property \Mrluke\Bus\Contracts\ProcessRepository   $processRepository
  *
  * @method Process createProcess(Instruction $instruction, array $handlers)
+ * @method bool hasHandler(Instruction $instruction)
  * @method Process pushInstructionToQueue($id, Instruction $instruction, $handler, $cleanOnSuccess)
  * @method mixed resolveClass($container, string $className)
  * @method void runSingleProcess(Process $process, Instruction $instruction, Handler $handler)
@@ -37,9 +39,16 @@ trait FiresMultipleHandlers
      * @return mixed
      * @throws \Mrluke\Bus\Exceptions\InvalidHandler
      * @throws \ReflectionException
+     * @throws \Mrluke\Bus\Exceptions\MissingHandler
      */
     public function handler(Instruction $instruction)
     {
+        if (!$this->hasHandler($instruction)) {
+            throw new MissingHandler(
+                sprintf('Given instruction [%s] is not registered.', get_class($instruction))
+            );
+        }
+
         $handlers = $this->handlers[get_class($instruction)];
 
         if (!is_array($handlers)) {
@@ -56,9 +65,11 @@ trait FiresMultipleHandlers
 
             if (
                 !$reflection->isInstantiable() ||
-                !in_array(Handler::class, $reflection->getInterfaces())
+                !$reflection->implementsInterface(Handler::class)
             ) {
-                throw new InvalidHandler('Handler must be an instance of %s', Handler::class);
+                throw new InvalidHandler(
+                    sprintf('Handler must be an instance of %s', Handler::class)
+                );
             }
         }
 
@@ -69,19 +80,20 @@ trait FiresMultipleHandlers
      * Run handler synchronously.
      *
      * @param \Mrluke\Bus\Contracts\Instruction $instruction
-     * @param array                             $handlerClasses
+     * @param array                             $handlerClass
      * @param bool                              $clean
      * @return \Mrluke\Bus\Contracts\Process
      * @throws \Illuminate\Contracts\Container\BindingResolutionException
      * @throws \Mrluke\Bus\Exceptions\InvalidAction
+     * @throws \Mrluke\Bus\Exceptions\MissingHandler
      * @throws \ReflectionException
      */
-    protected function run(Instruction $instruction, array $handlerClasses, bool $clean): Process
+    protected function run(Instruction $instruction, $handlerClass, bool $clean): Process
     {
-        $process = $this->createProcess($instruction, $handlerClasses);
+        $process = $this->createProcess($instruction, $handlerClass);
 
         $process->start();
-        foreach ($handlerClasses as $class) {
+        foreach ($handlerClass as $class) {
             $this->runSingleProcess(
                 $process,
                 $instruction,
@@ -101,19 +113,20 @@ trait FiresMultipleHandlers
      * Run handler asynchronously.
      *
      * @param \Mrluke\Bus\Contracts\Instruction $instruction
-     * @param array                             $handlerClasses
+     * @param array                             $handlerClass
      * @param bool                              $clean
      * @return \Mrluke\Bus\Contracts\Process
      * @throws \Mrluke\Bus\Exceptions\InvalidAction
+     * @throws \Mrluke\Bus\Exceptions\MissingConfiguration
      */
     protected function runAsync(
         Instruction $instruction,
-        array $handlerClasses,
+        $handlerClass,
         bool $clean
     ): Process {
-        $process = $this->createProcess($instruction, $handlerClasses);
+        $process = $this->createProcess($instruction, $handlerClass);
 
-        foreach ($handlerClasses as $class) {
+        foreach ($handlerClass as $class) {
             $this->pushInstructionToQueue(
                 $process->id(),
                 $instruction,
