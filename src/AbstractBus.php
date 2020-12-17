@@ -326,7 +326,7 @@ abstract class AbstractBus implements Bus
      * @throws \Mrluke\Bus\Exceptions\MissingHandler
      * @throws \ReflectionException
      */
-    protected function run(Instruction $instruction, string $handlerClass, bool $clean): Process
+    protected function run(Instruction $instruction, $handlerClass, bool $clean): Process
     {
         $process = $this->createProcess($instruction, $handlerClass);
 
@@ -357,7 +357,7 @@ abstract class AbstractBus implements Bus
      */
     protected function runAsync(
         Instruction $instruction,
-        string $handlerClass,
+        $handlerClass,
         bool $clean
     ): Process {
         $process = $this->createProcess($instruction, $handlerClass);
