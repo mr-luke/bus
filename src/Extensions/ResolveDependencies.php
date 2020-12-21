@@ -4,6 +4,7 @@ namespace Mrluke\Bus\Extensions;
 
 use Illuminate\Contracts\Container\Container;
 use ReflectionClass;
+use RuntimeException;
 
 /**
  * Trait ResolveDependencies
@@ -32,20 +33,29 @@ trait ResolveDependencies
      * @throws \Illuminate\Contracts\Container\BindingResolutionException
      * @throws \ReflectionException
      */
-    protected function resolveClass(Container $container ,string $className)
+    protected function resolveClass(Container $container, string $className)
     {
         if (!isset($this->resolved[$className])) {
-            $reflection  = new ReflectionClass($className);
+            $reflection = new ReflectionClass($className);
 
             $dependencies = [];
             if ($constructor = $reflection->getConstructor()) {
                 foreach ($constructor->getParameters() as $p) {
+                    if (!$p->getClass()) {
+                        throw new RuntimeException(
+                            sprintf(
+                                'Cannot resolve handler [%s]. Missing type annotation of parameter [%s]',
+                                $className,
+                                $p->getName()
+                            )
+                        );
+                    }
                     $dependencies[] = $container->make($p->getClass()->getName());
                 }
             }
 
-            $this->resolved[$className] = empty($dependencies) ?
-                new $className : $reflection->newInstanceArgs($dependencies);
+            $this->resolved[$className] = empty($dependencies)
+                ? new $className : $reflection->newInstanceArgs($dependencies);
         }
 
         return $this->resolved[$className];

@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Mrluke\Bus;
 
+use Mrluke\Bus\Contracts\Command;
 use Mrluke\Bus\Contracts\CommandBus as CommandBusContract;
 use Mrluke\Bus\Contracts\HasAsyncProcesses;
+use Mrluke\Bus\Contracts\Process;
 use Mrluke\Bus\Extensions\UsesDefaultQueue;
 
 /**
@@ -20,6 +22,15 @@ use Mrluke\Bus\Extensions\UsesDefaultQueue;
 class CommandBus extends AbstractBus implements CommandBusContract, HasAsyncProcesses
 {
     use UsesDefaultQueue;
+
+    /**
+     * @inheritDoc
+     * @codeCoverageIgnore
+     */
+    public function publish(Command $command, bool $cleanOnSuccess = false): Process
+    {
+        return $this->dispatch($command, $cleanOnSuccess);
+    }
 
     /**
      * @inheritDoc
