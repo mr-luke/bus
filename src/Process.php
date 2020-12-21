@@ -351,6 +351,29 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
     }
 
     /**
+     * @inheritDoc
+     */
+    public function resultOf(string $handler): array
+    {
+        if (!array_key_exists($handler, $this->results)) {
+            throw new MissingHandler(
+                sprintf('This process doesn\'t contain handler [%s]', $handler)
+            );
+        }
+
+        return $this->results[$handler];
+    }
+
+    /**
+     * @inheritDoc
+     * @codeCoverageIgnore
+     */
+    public function results(): array
+    {
+        return $this->results;
+    }
+
+    /**
      * Mark process as started.
      *
      * @return int

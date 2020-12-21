@@ -122,6 +122,22 @@ interface Process
     public function qualifyToStart(): bool;
 
     /**
+     * Return result of given process.
+     *
+     * @param string $handler
+     * @return array
+     * @throws \Mrluke\Bus\Exceptions\MissingHandler
+     */
+    public function resultOf(string $handler): array;
+
+    /**
+     * Return results of Process.
+     *
+     * @return array
+     */
+    public function results(): array;
+
+    /**
      * Mark process as started.
      *
      * @return int
