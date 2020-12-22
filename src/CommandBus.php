@@ -24,6 +24,13 @@ class CommandBus extends AbstractBus implements CommandBusContract, HasAsyncProc
     use UsesDefaultQueue;
 
     /**
+     * Determine if Bus should stop executing on exception.
+     *
+     * @var bool
+     */
+    protected $stopOnException = true;
+
+    /**
      * @inheritDoc
      * @codeCoverageIgnore
      */

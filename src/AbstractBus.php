@@ -101,6 +101,13 @@ abstract class AbstractBus implements Bus
     protected $queueResolver;
 
     /**
+     * Determine if Bus should stop executing on exception.
+     *
+     * @var bool
+     */
+    protected $stopOnException = false;
+
+    /**
      * @param \Mrluke\Bus\Contracts\ProcessRepository   $repository
      * @param \Illuminate\Contracts\Container\Container $container
      * @param \Illuminate\Pipeline\Pipeline             $pipeline
@@ -404,6 +411,10 @@ abstract class AbstractBus implements Bus
         } catch (Exception $e) {
             $process->applyResult(get_class($handler), Process::Failed, $e->getMessage());
             $this->logger->error($e);
+
+            if ($this->stopOnException) {
+                throw $e;
+            }
         }
     }
 
