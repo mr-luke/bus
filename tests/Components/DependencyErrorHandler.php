@@ -15,13 +15,13 @@ use Mrluke\Bus\Contracts\ProcessRepository;
  * @package Tests\Components
  * @codeCoverageIgnore
  */
-class HelloHandler implements Handler
+class DependencyErrorHandler implements Handler
 {
     /**
-     * @param \Mrluke\Bus\Contracts\ProcessRepository $repository
+     * @param mixed
      * @return void
      */
-    public function __construct(ProcessRepository $repository) {
+    public function __construct($repository) {
         $this->repository = $repository;
     }
 

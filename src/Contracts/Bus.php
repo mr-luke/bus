@@ -33,21 +33,21 @@ interface Bus
     /**
      * Check if an instruction has it's handler registered.
      *
-     * @param \Mrluke\Bus\Contracts\Instruction $instruction
+     * @param \Mrluke\Bus\Contracts\Trigger $trigger
      * @return bool
      */
-    public function hasHandler(Instruction $instruction): bool;
+    public function hasHandler(Trigger $trigger): bool;
 
     /**
      * Return handler of given instruction.
      *
-     * @param \Mrluke\Bus\Contracts\Instruction $instruction
-     * @return \Mrluke\Bus\Contracts\Handler|\Mrluke\Bus\Contracts\Handler[]
+     * @param \Mrluke\Bus\Contracts\Trigger $trigger
+     * @return \Mrluke\Bus\Contracts\Handler[]
      * @throws \Mrluke\Bus\Exceptions\InvalidHandler
      * @throws \Mrluke\Bus\Exceptions\MissingHandler
      * @throws \ReflectionException
      */
-    public function handler(Instruction $instruction);
+    public function handler(Trigger $trigger): array;
 
     /**
      * Map an instruction to a handler.

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use Carbon\CarbonImmutable;
+use Exception;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\Queue\Factory;
 use Illuminate\Log\Logger;
@@ -18,6 +19,7 @@ use Mrluke\Bus\Contracts\ProcessRepository;
 use Mrluke\Bus\Exceptions\MissingConfiguration;
 use Tests\AppCase;
 use Tests\Components\AsyncHelloCommand;
+use Tests\Components\DependencyErrorHandler;
 use Tests\Components\ErrorHandler;
 use Tests\Components\HelloCommand;
 use Tests\Components\HelloHandler;
@@ -120,6 +122,17 @@ class LogicFlowTest extends AppCase
         );
     }
 
+    public function testIfThrowWhenHandlerDoesntHaveTypeAnnotation()
+    {
+        $this->expectException(\RuntimeException::class);
+
+        /* @var CommandBus $bus */
+        $bus = $this->app->make(CommandBus::class);
+        $bus->map([HelloCommand::class => DependencyErrorHandler::class]);
+
+        $bus->dispatch(new HelloCommand('Hello world'));
+    }
+
     public function testSyncCommandDispatchingWithoutClearing()
     {
         $config = $this->app->make(Config::class);
@@ -188,34 +201,15 @@ class LogicFlowTest extends AppCase
 
     public function testSyncCommandDispatchingWithFail()
     {
-        $config = $this->app->make(Config::class);
+        $this->expectException(Exception::class);
 
         /* @var CommandBus $bus */
         $bus = $this->app->make(CommandBus::class);
         $bus->map([HelloCommand::class => ErrorHandler::class]);
 
-        $process = $bus->dispatch(
+        $bus->dispatch(
             new HelloCommand('An exception'),
             true
-        );
-
-        $this->assertInstanceOf(
-            Process::class,
-            $process
-        );
-
-        $this->assertEquals(
-            Process::Finished,
-            $process->status()
-        );
-
-        $this->assertEquals(
-            [ErrorHandler::class => ['status' => Process::Failed, 'feedback' => 'An exception']],
-            $process->toArray()['results']
-        );
-
-        $this->assertTrue(
-            !DB::table($config->get('table'))->where('id', $process->id())->exists()
         );
     }
 

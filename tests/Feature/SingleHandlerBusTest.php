@@ -7,7 +7,7 @@ use Illuminate\Log\Logger;
 use Illuminate\Pipeline\Pipeline;
 use PHPUnit\Framework\TestCase;
 
-use Mrluke\Bus\AbstractBus;
+use Mrluke\Bus\SingleHandlerBus;
 use Mrluke\Bus\Contracts\ProcessRepository;
 use Mrluke\Bus\Exceptions\InvalidHandler;
 use Mrluke\Bus\Exceptions\MissingHandler;
@@ -15,15 +15,15 @@ use Tests\Components\HelloCommand;
 use Tests\Components\HelloHandler;
 use Tests\Components\HelloNotHandler;
 
-class AbstractBusTest extends TestCase
+class SingleHandlerBusTest extends TestCase
 {
     public function testIfHandlerMethodThrowsWhenMultipleHandlersSet()
     {
         $this->expectException(InvalidHandler::class);
 
-        /* @var AbstractBus $bus */
+        /* @var SingleHandlerBus $bus */
         $bus = $this->getMockForAbstractClass(
-            AbstractBus::class,
+            SingleHandlerBus::class,
             [
                 $this->createMock(ProcessRepository::class),
                 $this->createMock(Container::class),
@@ -39,33 +39,13 @@ class AbstractBusTest extends TestCase
         );
     }
 
-    public function testIfHandlerThrowsWhenInstructionIsNotRegistered()
-    {
-        $this->expectException(MissingHandler::class);
-
-        /* @var AbstractBus $bus */
-        $bus = $this->getMockForAbstractClass(
-            AbstractBus::class,
-            [
-                $this->createMock(ProcessRepository::class),
-                $this->createMock(Container::class),
-                $this->createMock(Pipeline::class),
-                $this->createMock(Logger::class)
-            ]
-        );
-
-        $bus->handler(
-            new HelloCommand('Hello world')
-        );
-    }
-
     public function testIfHandlerMethodThrowsWhenHandlerMismatchInterface()
     {
         $this->expectException(InvalidHandler::class);
 
-        /* @var AbstractBus $bus */
+        /* @var SingleHandlerBus $bus */
         $bus = $this->getMockForAbstractClass(
-            AbstractBus::class,
+            SingleHandlerBus::class,
             [
                 $this->createMock(ProcessRepository::class),
                 $this->createMock(Container::class),
@@ -83,9 +63,9 @@ class AbstractBusTest extends TestCase
 
     public function testIfHandlerMethodReturnsInstantiableHandler()
     {
-        /* @var AbstractBus $bus */
+        /* @var SingleHandlerBus $bus */
         $bus = $this->getMockForAbstractClass(
-            AbstractBus::class,
+            SingleHandlerBus::class,
             [
                 $this->createMock(ProcessRepository::class),
                 $this->createMock(Container::class),
@@ -97,7 +77,7 @@ class AbstractBusTest extends TestCase
         $bus->map([HelloCommand::class => HelloHandler::class]);
 
         $this->assertEquals(
-            HelloHandler::class,
+            [HelloHandler::class],
             $bus->handler(new HelloCommand('Hello world'))
         );
     }
@@ -106,9 +86,9 @@ class AbstractBusTest extends TestCase
     {
         $this->expectException(MissingHandler::class);
 
-        /* @var AbstractBus $bus */
+        /* @var SingleHandlerBus $bus */
         $bus = $this->getMockForAbstractClass(
-            AbstractBus::class,
+            SingleHandlerBus::class,
             [
                 $this->createMock(ProcessRepository::class),
                 $this->createMock(Container::class),

@@ -2,7 +2,7 @@
 
 namespace Tests\Components;
 
-use Mrluke\Bus\AbstractBus;
+use Mrluke\Bus\SingleHandlerBus;
 
 /**
  * Class SyncBus
@@ -13,7 +13,7 @@ use Mrluke\Bus\AbstractBus;
  * @package Tests\Components
  * @codeCoverageIgnore
  */
-class SyncBus extends AbstractBus
+class SyncBus extends SingleHandlerBus
 {
     /**
      * @inheritDoc

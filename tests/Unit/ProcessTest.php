@@ -313,6 +313,55 @@ class ProcessTest extends TestCase
         $this->assertTrue($process->qualifyToStart());
     }
 
+    public function testIfResultOfThrowsWhenHandlerIsUnknown()
+    {
+        $this->expectException(MissingHandler::class);
+
+        $carbon = $this->buildCarbonMock();
+        $results = [
+            'Handler'  => ['status' => ProcessContract::New]
+        ];
+
+        $process = new Process(
+            'id',
+            'bus',
+            'Process',
+            ProcessContract::New,
+            count($results),
+            $results,
+            null,
+            $carbon
+        );
+
+        $process->resultOf('Handler2');
+    }
+
+    public function testIfResultOfReturnsResultsForHandler()
+    {
+        $carbon = $this->buildCarbonMock();
+
+        $handlerResult = ['status' => ProcessContract::New];
+        $results = [
+            'Handler'  => $handlerResult
+        ];
+
+        $process = new Process(
+            'id',
+            'bus',
+            'Process',
+            ProcessContract::New,
+            count($results),
+            $results,
+            null,
+            $carbon
+        );
+
+        $this->assertEquals(
+            $handlerResult,
+            $process->resultOf('Handler')
+        );
+    }
+
     /**
      * Return Carbon mock.
      *

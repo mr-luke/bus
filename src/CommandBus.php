@@ -19,7 +19,7 @@ use Mrluke\Bus\Extensions\UsesDefaultQueue;
  * @link    https://github.com/mr-luke/bus
  * @package Mrluke\Bus
  */
-class CommandBus extends AbstractBus implements CommandBusContract, HasAsyncProcesses
+class CommandBus extends SingleHandlerBus implements CommandBusContract, HasAsyncProcesses
 {
     use UsesDefaultQueue;
 

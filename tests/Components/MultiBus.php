@@ -2,10 +2,9 @@
 
 namespace Tests\Components;
 
-use Mrluke\Bus\AbstractBus;
 use Mrluke\Bus\Contracts\HasAsyncProcesses;
-use Mrluke\Bus\Extensions\FiresMultipleHandlers;
 use Mrluke\Bus\Extensions\UsesDefaultQueue;
+use Mrluke\Bus\MultipleHandlerBus;
 
 /**
  * Class SyncBus
@@ -16,9 +15,9 @@ use Mrluke\Bus\Extensions\UsesDefaultQueue;
  * @package Tests\Components
  * @codeCoverageIgnore
  */
-class MultiBus extends AbstractBus implements HasAsyncProcesses
+class MultiBus extends MultipleHandlerBus implements HasAsyncProcesses
 {
-    use FiresMultipleHandlers, UsesDefaultQueue;
+    use UsesDefaultQueue;
 
     /**
      * @inheritDoc

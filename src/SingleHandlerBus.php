@@ -10,6 +10,7 @@ use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\Queue\Queue;
 use Illuminate\Log\Logger;
 use Illuminate\Pipeline\Pipeline;
+use Mrluke\Bus\Contracts\Trigger;
 use Mrluke\Bus\Extensions\ResolveDependencies;
 use ReflectionClass;
 
@@ -26,7 +27,7 @@ use Mrluke\Bus\Exceptions\MissingHandler;
 use Mrluke\Bus\Extensions\TranslateResults;
 
 /**
- * Abstract Bus class with basic implementations.
+ * Abstract for single handler Bus.
  *
  * @author  Łukasz Sitnicki <lukasz.sitnicki@movecloser.pl>
  * @version 1.0.0
@@ -34,7 +35,7 @@ use Mrluke\Bus\Extensions\TranslateResults;
  * @link    https://github.com/mr-luke/bus
  * @package Mrluke\Bus
  */
-abstract class AbstractBus implements Bus
+abstract class SingleHandlerBus implements Bus
 {
     use ResolveDependencies, TranslateResults;
 
@@ -134,6 +135,16 @@ abstract class AbstractBus implements Bus
      */
     public function dispatch(Instruction $instruction, bool $cleanOnSuccess = null): Process
     {
+        if (!$instruction instanceof Trigger) {
+            throw new MissingConfiguration(
+                sprintf(
+                    'An instruction [%s] must implements [%s] contract to trigger handlers.',
+                    get_class($instruction),
+                    Trigger::class
+                )
+            );
+        }
+
         if (!$this->hasHandler($instruction)) {
             $this->throwOnMissingHandler($instruction);
         }
@@ -156,29 +167,29 @@ abstract class AbstractBus implements Bus
      * @inheritDoc
      * @codeCoverageIgnore
      */
-    public function hasHandler(Instruction $instruction): bool
+    public function hasHandler(Trigger $trigger): bool
     {
-        return array_key_exists(get_class($instruction), $this->handlers);
+        return array_key_exists(get_class($trigger), $this->handlers);
     }
 
     /**
      * @inheritDoc
      */
-    public function handler(Instruction $instruction)
+    public function handler(Trigger $trigger): array
     {
-        if (!$this->hasHandler($instruction)) {
+        if (!$this->hasHandler($trigger)) {
             throw new MissingHandler(
-                sprintf('Given instruction [%s] is not registered.', get_class($instruction))
+                sprintf('Given trigger [%s] is not registered.', get_class($trigger))
             );
         }
 
-        $handler = $this->handlers[get_class($instruction)];
+        $handler = $this->handlers[get_class($trigger)];
 
         if (is_array($handler)) {
             throw new InvalidHandler(
                 sprintf(
                     'Invalid handler for [%s]. Single Handler required.',
-                    get_class($instruction)
+                    get_class($trigger)
                 )
             );
         }
@@ -194,7 +205,7 @@ abstract class AbstractBus implements Bus
             );
         }
 
-        return $handler;
+        return [$handler];
     }
 
     /**
@@ -325,7 +336,7 @@ abstract class AbstractBus implements Bus
      * Run handler synchronously.
      *
      * @param \Mrluke\Bus\Contracts\Instruction $instruction
-     * @param string                            $handlerClass
+     * @param array                             $handlerStack
      * @param bool                              $clean
      * @return \Mrluke\Bus\Contracts\Process
      * @throws \Illuminate\Contracts\Container\BindingResolutionException
@@ -333,16 +344,20 @@ abstract class AbstractBus implements Bus
      * @throws \Mrluke\Bus\Exceptions\MissingHandler
      * @throws \ReflectionException
      */
-    protected function run(Instruction $instruction, $handlerClass, bool $clean): Process
+    protected function run(Instruction $instruction, array $handlerStack, bool $clean): Process
     {
-        $process = $this->createProcess($instruction, $handlerClass);
+        $process = $this->createProcess($instruction, $handlerStack);
 
         $process->start();
-        $this->runSingleProcess(
-            $process,
-            $instruction,
-            $this->resolveClass($this->container, $handlerClass)
-        );
+
+        foreach ($handlerStack as $class) {
+            $this->runSingleProcess(
+                $process,
+                $instruction,
+                $this->resolveClass($this->container, $class)
+            );
+        }
+
         $process->finish();
 
         if ($clean) {
@@ -356,7 +371,7 @@ abstract class AbstractBus implements Bus
      * Run handler asynchronously.
      *
      * @param \Mrluke\Bus\Contracts\Instruction $instruction
-     * @param string                            $handlerClass
+     * @param array                             $handlerStack
      * @param bool                              $clean
      * @return \Mrluke\Bus\Contracts\Process
      * @throws \Mrluke\Bus\Exceptions\InvalidAction
@@ -364,17 +379,19 @@ abstract class AbstractBus implements Bus
      */
     protected function runAsync(
         Instruction $instruction,
-        $handlerClass,
+        array $handlerStack,
         bool $clean
     ): Process {
-        $process = $this->createProcess($instruction, $handlerClass);
+        $process = $this->createProcess($instruction, $handlerStack);
 
-        $this->pushInstructionToQueue(
-            $process->id(),
-            $instruction,
-            $handlerClass,
-            $clean
-        );
+        foreach ($handlerStack as $class) {
+            $this->pushInstructionToQueue(
+                $process->id(),
+                $instruction,
+                $class,
+                $clean
+            );
+        }
 
         return $process;
     }
