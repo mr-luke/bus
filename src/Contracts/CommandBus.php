@@ -19,7 +19,6 @@ interface CommandBus extends Bus
      * Dispatch an instruction due to it's requirements.
      *
      * @param \Mrluke\Bus\Contracts\Command $command
-     * @param bool                          $cleanOnSuccess
      * @return \Mrluke\Bus\Contracts\Process|void
      * @throws \Mrluke\Bus\Exceptions\InvalidAction
      * @throws \Mrluke\Bus\Exceptions\InvalidHandler
@@ -28,5 +27,5 @@ interface CommandBus extends Bus
      * @throws \Illuminate\Contracts\Container\BindingResolutionException
      * @throws \ReflectionException
      */
-    public function publish(Command $command, bool $cleanOnSuccess = false): Process;
+    public function publish(Command $command): Process;
 }

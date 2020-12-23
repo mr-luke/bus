@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Log\Logger;
-use Illuminate\Pipeline\Pipeline;
 use PHPUnit\Framework\TestCase;
 
 use Mrluke\Bus\SingleHandlerBus;
@@ -27,7 +26,6 @@ class SingleHandlerBusTest extends TestCase
             [
                 $this->createMock(ProcessRepository::class),
                 $this->createMock(Container::class),
-                $this->createMock(Pipeline::class),
                 $this->createMock(Logger::class)
             ]
         );
@@ -49,7 +47,6 @@ class SingleHandlerBusTest extends TestCase
             [
                 $this->createMock(ProcessRepository::class),
                 $this->createMock(Container::class),
-                $this->createMock(Pipeline::class),
                 $this->createMock(Logger::class)
             ]
         );
@@ -69,7 +66,6 @@ class SingleHandlerBusTest extends TestCase
             [
                 $this->createMock(ProcessRepository::class),
                 $this->createMock(Container::class),
-                $this->createMock(Pipeline::class),
                 $this->createMock(Logger::class)
             ]
         );
@@ -92,13 +88,32 @@ class SingleHandlerBusTest extends TestCase
             [
                 $this->createMock(ProcessRepository::class),
                 $this->createMock(Container::class),
-                $this->createMock(Pipeline::class),
                 $this->createMock(Logger::class)
             ]
         );
 
         $bus->dispatch(
             new HelloCommand('Hello world')
+        );
+    }
+
+    public function testIfDispatchReturnsNullWhenHandlerIsMissingAndThrowingDisabled()
+    {
+        /* @var SingleHandlerBus $bus */
+        $bus = $this->getMockForAbstractClass(
+            SingleHandlerBus::class,
+            [
+                $this->createMock(ProcessRepository::class),
+                $this->createMock(Container::class),
+                $this->createMock(Logger::class)
+            ]
+        );
+
+        $bus->throwWhenNoHandler = false;
+        $this->assertNull(
+            $bus->dispatch(
+                new HelloCommand('Hello world')
+            )
         );
     }
 }

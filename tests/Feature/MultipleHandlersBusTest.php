@@ -4,15 +4,12 @@ namespace Tests\Feature;
 
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Log\Logger;
-use Illuminate\Pipeline\Pipeline;
-use Mrluke\Bus\Contracts\Process;
 use Mrluke\Bus\Contracts\ProcessRepository;
 use Mrluke\Bus\MultipleHandlerBus;
 use PHPUnit\Framework\TestCase;
 
 use Mrluke\Bus\Exceptions\InvalidHandler;
 use Mrluke\Bus\Exceptions\MissingHandler;
-use Tests\Components\ErrorHandler;
 use Tests\Components\HelloCommand;
 use Tests\Components\HelloHandler;
 use Tests\Components\HelloNotHandler;
@@ -29,7 +26,6 @@ class MultipleHandlersBusTest extends TestCase
             [
                 $this->createMock(ProcessRepository::class),
                 $this->createMock(Container::class),
-                $this->createMock(Pipeline::class),
                 $this->createMock(Logger::class)
             ]
         );
@@ -45,7 +41,6 @@ class MultipleHandlersBusTest extends TestCase
             [
                 $this->createMock(ProcessRepository::class),
                 $this->createMock(Container::class),
-                $this->createMock(Pipeline::class),
                 $this->createMock(Logger::class)
             ]
         );
@@ -68,7 +63,6 @@ class MultipleHandlersBusTest extends TestCase
             [
                 $this->createMock(ProcessRepository::class),
                 $this->createMock(Container::class),
-                $this->createMock(Pipeline::class),
                 $this->createMock(Logger::class)
             ]
         );

@@ -7,9 +7,9 @@ use Exception;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\Queue\Factory;
 use Illuminate\Log\Logger;
-use Illuminate\Pipeline\Pipeline;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use RuntimeException;
 
 use Mrluke\Bus\AsyncHandlerJob;
 use Mrluke\Bus\Contracts\CommandBus;
@@ -124,7 +124,7 @@ class LogicFlowTest extends AppCase
 
     public function testIfThrowWhenHandlerDoesntHaveTypeAnnotation()
     {
-        $this->expectException(\RuntimeException::class);
+        $this->expectException(RuntimeException::class);
 
         /* @var CommandBus $bus */
         $bus = $this->app->make(CommandBus::class);
@@ -141,10 +141,8 @@ class LogicFlowTest extends AppCase
         $bus = $this->app->make(CommandBus::class);
         $bus->map([HelloCommand::class => HelloHandler::class]);
 
-        $process = $bus->dispatch(
-            new HelloCommand('Hello world'),
-            false
-        );
+        $bus->cleanOnSuccess = false;
+        $process = $bus->dispatch(new HelloCommand('Hello world'));
 
         $this->assertInstanceOf(
             Process::class,
@@ -174,10 +172,8 @@ class LogicFlowTest extends AppCase
         $bus = $this->app->make(CommandBus::class);
         $bus->map([HelloCommand::class => HelloHandler::class]);
 
-        $process = $bus->dispatch(
-            new HelloCommand('Hello new world'),
-            true
-        );
+        $bus->cleanOnSuccess = true;
+        $process = $bus->dispatch(new HelloCommand('Hello new world'));
 
         $this->assertInstanceOf(
             Process::class,
@@ -207,10 +203,8 @@ class LogicFlowTest extends AppCase
         $bus = $this->app->make(CommandBus::class);
         $bus->map([HelloCommand::class => ErrorHandler::class]);
 
-        $bus->dispatch(
-            new HelloCommand('An exception'),
-            true
-        );
+        $bus->cleanOnSuccess = true;
+        $bus->dispatch(new HelloCommand('An exception'));
     }
 
     public function testAsyncCommandDispatchesJob()
@@ -221,10 +215,8 @@ class LogicFlowTest extends AppCase
         $bus = $this->app->make(CommandBus::class);
         $bus->map([AsyncHelloCommand::class => HelloHandler::class]);
 
-        $bus->dispatch(
-            new AsyncHelloCommand('Hello new world'),
-            true
-        );
+        $bus->cleanOnSuccess = true;
+        $bus->dispatch(new AsyncHelloCommand('Hello new world'));
     }
 
     public function testAsyncCommandDoesntThrowOnFail()
@@ -233,10 +225,8 @@ class LogicFlowTest extends AppCase
         $bus = $this->app->make(CommandBus::class);
         $bus->map([AsyncHelloCommand::class => ErrorHandler::class]);
 
-        $process = $bus->dispatch(
-            new AsyncHelloCommand('Hello new world'),
-            true
-        );
+        $bus->cleanOnSuccess = true;
+        $process = $bus->dispatch(new AsyncHelloCommand('Hello new world'));
 
         $this->assertInstanceOf(
             Process::class,
@@ -260,10 +250,7 @@ class LogicFlowTest extends AppCase
         $bus = $this->app->make(CommandBus::class);
         $bus->map([AsyncHelloCommand::class => HelloHandler::class]);
 
-        $process = $bus->dispatch(
-            new AsyncHelloCommand('Hello new world'),
-            true
-        );
+        $process = $bus->dispatch(new AsyncHelloCommand('Hello new world'));
 
         $this->assertInstanceOf(
             Process::class,
@@ -289,10 +276,7 @@ class LogicFlowTest extends AppCase
         $bus = $this->app->make(SyncBus::class);
         $bus->map([AsyncHelloCommand::class => HelloHandler::class]);
 
-        $bus->dispatch(
-            new AsyncHelloCommand('Hello new world'),
-            true
-        );
+        $bus->dispatch(new AsyncHelloCommand('Hello new world'));
     }
 
     public function testSyncCommandFiresMultipleHandlers()
@@ -303,17 +287,13 @@ class LogicFlowTest extends AppCase
         $bus = new MultiBus(
             $this->app->make(ProcessRepository::class),
             $this->app->make(Container::class),
-            new Pipeline($this->app),
             $this->app->make(Logger::class),
             null
         );
 
         $bus->map([HelloCommand::class => [HelloHandler::class, ErrorHandler::class]]);
 
-        $process = $bus->dispatch(
-            new HelloCommand('Hello new world'),
-            true
-        );
+        $process = $bus->dispatch(new HelloCommand('Hello new world'));
 
         $this->assertInstanceOf(
             Process::class,
@@ -348,7 +328,6 @@ class LogicFlowTest extends AppCase
         $bus = new MultiBus(
             $this->app->make(ProcessRepository::class),
             $container,
-            new Pipeline($this->app),
             $this->app->make(Logger::class),
             function($connection = null) use ($container) {
                 return $container->make(Factory::class)->connection($connection);
@@ -357,9 +336,6 @@ class LogicFlowTest extends AppCase
 
         $bus->map([AsyncHelloCommand::class => [HelloHandler::class, ErrorHandler::class]]);
 
-        $bus->dispatch(
-            new AsyncHelloCommand('Hello new world'),
-            true
-        );
+        $bus->dispatch(new AsyncHelloCommand('Hello new world'));
     }
 }

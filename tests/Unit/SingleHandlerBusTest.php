@@ -4,7 +4,6 @@ namespace Tests\Unit;
 
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Log\Logger;
-use Illuminate\Pipeline\Pipeline;
 use PHPUnit\Framework\TestCase;
 
 use Mrluke\Bus\Contracts\Command;
@@ -27,7 +26,6 @@ class SingleHandlerBusTest extends TestCase
             [
                 $this->createMock(ProcessRepository::class),
                 $this->createMock(Container::class),
-                $this->createMock(Pipeline::class),
                 $this->createMock(Logger::class)
             ]
         );
@@ -47,7 +45,6 @@ class SingleHandlerBusTest extends TestCase
             [
                 $this->createMock(ProcessRepository::class),
                 $this->createMock(Container::class),
-                $this->createMock(Pipeline::class),
                 $this->createMock(Logger::class)
             ]
         );

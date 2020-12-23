@@ -23,20 +23,26 @@ class CommandBus extends SingleHandlerBus implements CommandBusContract, HasAsyn
 {
     use UsesDefaultQueue;
 
+    /** Determine if process should be delete on success.
+     *
+     * @var bool
+     */
+    public $cleanOnSuccess = true;
+
     /**
      * Determine if Bus should stop executing on exception.
      *
      * @var bool
      */
-    protected $stopOnException = true;
+    public $stopOnException = true;
 
     /**
      * @inheritDoc
      * @codeCoverageIgnore
      */
-    public function publish(Command $command, bool $cleanOnSuccess = false): Process
+    public function publish(Command $command): Process
     {
-        return $this->dispatch($command, $cleanOnSuccess);
+        return $this->dispatch($command);
     }
 
     /**

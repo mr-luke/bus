@@ -9,7 +9,6 @@ use Exception;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\Queue\Queue;
 use Illuminate\Log\Logger;
-use Illuminate\Pipeline\Pipeline;
 use Mrluke\Bus\Contracts\Trigger;
 use Mrluke\Bus\Extensions\ResolveDependencies;
 use ReflectionClass;
@@ -43,7 +42,7 @@ abstract class SingleHandlerBus implements Bus
      *
      * @var bool
      */
-    protected $cleanOnSuccess = true;
+    public $cleanOnSuccess = true;
 
     /**
      * The container implementation.
@@ -106,26 +105,30 @@ abstract class SingleHandlerBus implements Bus
      *
      * @var bool
      */
-    protected $stopOnException = false;
+    public $stopOnException = false;
+
+    /**
+     * Determine if Bus should throw if there's no handler to process.
+     *
+     * @var bool
+     */
+    public $throwWhenNoHandler = true;
 
     /**
      * @param \Mrluke\Bus\Contracts\ProcessRepository   $repository
      * @param \Illuminate\Contracts\Container\Container $container
-     * @param \Illuminate\Pipeline\Pipeline             $pipeline
      * @param \Illuminate\Log\Logger                    $logger
      * @param \Closure|null                             $queueResolver
      */
     public function __construct(
         ProcessRepository $repository,
         Container $container,
-        Pipeline $pipeline,
         Logger $logger,
         $queueResolver = null
     ) {
         $this->processRepository = $repository;
 
         $this->container = $container;
-        $this->pipeline = $pipeline;
         $this->queueResolver = $queueResolver;
         $this->logger = $logger;
     }
@@ -133,9 +136,9 @@ abstract class SingleHandlerBus implements Bus
     /**
      * @inheritDoc
      */
-    public function dispatch(Instruction $instruction, bool $cleanOnSuccess = null): Process
+    public function dispatch(Instruction $instruction, Trigger $trigger = null): ?Process
     {
-        if (!$instruction instanceof Trigger) {
+        if (is_null($trigger) && !$instruction instanceof Trigger) {
             throw new MissingConfiguration(
                 sprintf(
                     'An instruction [%s] must implements [%s] contract to trigger handlers.',
@@ -144,23 +147,49 @@ abstract class SingleHandlerBus implements Bus
                 )
             );
         }
+        $trigger = is_null($trigger) ? $instruction : $trigger;
 
-        if (!$this->hasHandler($instruction)) {
-            $this->throwOnMissingHandler($instruction);
+        if (!$this->hasHandler($trigger)) {
+            if (!$this->throwWhenNoHandler) {
+                return null;
+            }
+
+            $this->throwOnMissingHandler($trigger);
         }
 
-        $handler = $this->handler($instruction);
+        $handlers = $this->handler($trigger);
+        $process = $this->createProcess($instruction, $handlers);
 
         if ($instruction instanceof ShouldBeAsync) {
             /** @var Instruction $instruction */
-            return $this->runAsync(
+            $this->runAsync(
+                $process,
                 $instruction,
-                $handler,
-                $this->considerCleaning($cleanOnSuccess)
+                $handlers
+            );
+        } else {
+            $this->run(
+                $process,
+                $instruction,
+                $handlers
             );
         }
 
-        return $this->run($instruction, $handler, $this->considerCleaning($cleanOnSuccess));
+        return $process;
+    }
+
+    /**
+     * @inheritDoc
+     * @codeCoverageIgnore
+     */
+    public function dispatchMultiple(Trigger $trigger, array $instructions): array {
+        $processes = [];
+
+        foreach ($instructions as $i) {
+            $processes[] = $this->dispatch($i, $trigger);
+        }
+
+        return $processes;
     }
 
     /**
@@ -231,17 +260,6 @@ abstract class SingleHandlerBus implements Bus
     }
 
     /**
-     * Consider if the process should be delete on success.
-     *
-     * @param bool|null $clean
-     * @return bool
-     */
-    protected function considerCleaning(?bool $clean): bool
-    {
-        return $clean !== null ? $clean : $this->cleanOnSuccess;
-    }
-
-    /**
      * Return delay.
      *
      * @param \Mrluke\Bus\Contracts\Instruction $instruction
@@ -268,16 +286,16 @@ abstract class SingleHandlerBus implements Bus
     /**
      * Create process for instruction.
      *
-     * @param \Mrluke\Bus\Contracts\Instruction $instruction
+     * @param Trigger|string                    $trigger
      * @param                                   $handler
      * @return \Mrluke\Bus\Contracts\Process
      * @throws \Mrluke\Bus\Exceptions\InvalidAction
      */
-    protected function createProcess(Instruction $instruction, $handler): Process
+    protected function createProcess($trigger, $handler): Process
     {
         return $this->processRepository->create(
             $this->getBusName(),
-            get_class($instruction),
+            $trigger instanceof Trigger ? get_class($trigger) : (string)$trigger,
             is_array($handler) ? $handler : [$handler]
         );
     }
@@ -335,19 +353,20 @@ abstract class SingleHandlerBus implements Bus
     /**
      * Run handler synchronously.
      *
+     * @param \Mrluke\Bus\Contracts\Process     $process
      * @param \Mrluke\Bus\Contracts\Instruction $instruction
      * @param array                             $handlerStack
-     * @param bool                              $clean
-     * @return \Mrluke\Bus\Contracts\Process
+     * @return void
      * @throws \Illuminate\Contracts\Container\BindingResolutionException
      * @throws \Mrluke\Bus\Exceptions\InvalidAction
      * @throws \Mrluke\Bus\Exceptions\MissingHandler
      * @throws \ReflectionException
      */
-    protected function run(Instruction $instruction, array $handlerStack, bool $clean): Process
-    {
-        $process = $this->createProcess($instruction, $handlerStack);
-
+    protected function run(
+        Process $process,
+        Instruction $instruction,
+        array $handlerStack
+    ): void {
         $process->start();
 
         foreach ($handlerStack as $class) {
@@ -360,40 +379,33 @@ abstract class SingleHandlerBus implements Bus
 
         $process->finish();
 
-        if ($clean) {
+        if ($this->cleanOnSuccess) {
             $this->processRepository->delete($process->id());
         }
-
-        return $process;
     }
 
     /**
      * Run handler asynchronously.
      *
+     * @param \Mrluke\Bus\Contracts\Process     $process
      * @param \Mrluke\Bus\Contracts\Instruction $instruction
      * @param array                             $handlerStack
-     * @param bool                              $clean
-     * @return \Mrluke\Bus\Contracts\Process
-     * @throws \Mrluke\Bus\Exceptions\InvalidAction
+     * @return void
      * @throws \Mrluke\Bus\Exceptions\MissingConfiguration
      */
     protected function runAsync(
+        Process $process,
         Instruction $instruction,
-        array $handlerStack,
-        bool $clean
-    ): Process {
-        $process = $this->createProcess($instruction, $handlerStack);
-
+        array $handlerStack
+    ): void {
         foreach ($handlerStack as $class) {
             $this->pushInstructionToQueue(
                 $process->id(),
                 $instruction,
                 $class,
-                $clean
+                $this->cleanOnSuccess
             );
         }
-
-        return $process;
     }
 
     /**
@@ -411,13 +423,7 @@ abstract class SingleHandlerBus implements Bus
         Handler $handler
     ): void {
         try {
-            $result = $this->pipeline->send($instruction)
-                ->through($this->pipes)
-                ->then(
-                    function($instruction) use ($handler) {
-                        return $handler->handle($instruction);
-                    }
-                );
+            $result = $handler->handle($instruction);
 
             $process->applyResult(
                 get_class($handler),
@@ -438,13 +444,13 @@ abstract class SingleHandlerBus implements Bus
     /**
      * Throw exception when handler is missing.
      *
-     * @param \Mrluke\Bus\Contracts\Instruction $instruction
+     * @param \Mrluke\Bus\Contracts\Trigger $trigger
      * @throws \Mrluke\Bus\Exceptions\MissingHandler
      */
-    protected function throwOnMissingHandler(Instruction $instruction): void
+    protected function throwOnMissingHandler(Trigger $trigger): void
     {
         throw new MissingHandler(
-            sprintf('Missing handler for the instruction [%s]', get_class($instruction))
+            sprintf('Missing handler for the instruction [%s]', get_class($trigger))
         );
     }
 

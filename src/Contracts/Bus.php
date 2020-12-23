@@ -18,9 +18,9 @@ interface Bus
     /**
      * Dispatch an instruction due to it's requirements.
      *
-     * @param \Mrluke\Bus\Contracts\Instruction $instruction
-     * @param bool                              $cleanOnSuccess
-     * @return \Mrluke\Bus\Contracts\Process|void
+     * @param \Mrluke\Bus\Contracts\Instruction         $instruction
+     * @param \Mrluke\Bus\Contracts\Trigger|null $trigger
+     * @return \Mrluke\Bus\Contracts\Process|null
      * @throws \Mrluke\Bus\Exceptions\InvalidAction
      * @throws \Mrluke\Bus\Exceptions\InvalidHandler
      * @throws \Mrluke\Bus\Exceptions\MissingConfiguration
@@ -28,7 +28,25 @@ interface Bus
      * @throws \Illuminate\Contracts\Container\BindingResolutionException
      * @throws \ReflectionException
      */
-    public function dispatch(Instruction $instruction, bool $cleanOnSuccess = false): Process;
+    public function dispatch(Instruction $instruction, Trigger $trigger = null): ?Process;
+
+    /**
+     * Dispatch an instruction due to it's requirements.
+     *
+     * @param \Mrluke\Bus\Contracts\Trigger       $trigger
+     * @param \Mrluke\Bus\Contracts\Instruction[] $instructions
+     * @return array
+     * @throws \Mrluke\Bus\Exceptions\InvalidAction
+     * @throws \Mrluke\Bus\Exceptions\InvalidHandler
+     * @throws \Mrluke\Bus\Exceptions\MissingConfiguration
+     * @throws \Mrluke\Bus\Exceptions\MissingHandler
+     * @throws \Illuminate\Contracts\Container\BindingResolutionException
+     * @throws \ReflectionException
+     */
+    public function dispatchMultiple(
+        Trigger $trigger,
+        array $instructions
+    ): array;
 
     /**
      * Check if an instruction has it's handler registered.
@@ -52,7 +70,7 @@ interface Bus
     /**
      * Map an instruction to a handler.
      *
-     * @param  array  $map
+     * @param array $map
      * @return $this
      */
     public function map(array $map): self;
@@ -60,7 +78,7 @@ interface Bus
     /**
      * Set the pipes through which commands should be piped before dispatching.
      *
-     * @param  array  $pipes
+     * @param array $pipes
      * @return $this
      */
     public function pipeThrough(array $pipes): self;

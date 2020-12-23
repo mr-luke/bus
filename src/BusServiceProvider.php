@@ -5,7 +5,6 @@ namespace Mrluke\Bus;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\Queue\Factory;
 use Illuminate\Log\Logger;
-use Illuminate\Pipeline\Pipeline;
 use Illuminate\Support\ServiceProvider;
 use Mrluke\Configuration\Host;
 use Mrluke\Configuration\Schema;
@@ -80,7 +79,6 @@ final class BusServiceProvider extends ServiceProvider
                 return new \Mrluke\Bus\CommandBus(
                     $app->make(ProcessRepository::class),
                     $container,
-                    new Pipeline($container),
                     $app->make(Logger::class),
                     function($connection = null) use ($app) {
                         return $app->make(Factory::class)->connection($connection);
