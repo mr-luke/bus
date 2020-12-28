@@ -33,6 +33,7 @@ class ProcessTest extends TestCase
             count($results),
             $results,
             null,
+            null,
             $carbon
         );
 
@@ -68,6 +69,7 @@ class ProcessTest extends TestCase
 
         $actualData = $process->toArray();
         unset($actualData['id']);
+        unset($actualData['pid']);
         unset($actualData['committedAt']);
         $this->assertEquals(
             [
@@ -105,6 +107,7 @@ class ProcessTest extends TestCase
             count($results),
             $results,
             null,
+            null,
             $carbon
         );
 
@@ -127,6 +130,7 @@ class ProcessTest extends TestCase
             ProcessContract::Pending,
             count($results),
             $results,
+            null,
             null,
             $carbon
         );
@@ -151,6 +155,7 @@ class ProcessTest extends TestCase
         $model->status = ProcessContract::New;
         $model->handlers = 1;
         $model->results = '{"Handler":{"status":"' . ProcessContract::New . '"}}';
+        $model->pid = 123;
         $model->committed_by = 1;
         $model->committed_at = 1607857526;
         $model->started_at = null;
@@ -179,6 +184,7 @@ class ProcessTest extends TestCase
                 'results'     => [
                     self::HandlerName => ['status' => ProcessContract::Pending]
                 ],
+                'pid'         => 12345,
                 'committedBy' => 1,
                 'committedAt' => 1607857526000,
                 'startedAt'   => 1607857566000,
@@ -207,6 +213,7 @@ class ProcessTest extends TestCase
             count($results),
             $results,
             null,
+            null,
             $carbon
         );
 
@@ -229,6 +236,7 @@ class ProcessTest extends TestCase
             ProcessContract::New,
             count($results),
             $results,
+            null,
             null,
             $carbon
         );
@@ -260,6 +268,7 @@ class ProcessTest extends TestCase
         $model->status = $status;
         $model->handlers = 1;
         $model->results = '{"' . self::HandlerName . '":{"status":"' . $status . '"}}';
+        $model->pid = 12345;
         $model->committed_by = 1;
         $model->committed_at = 1607857526000;
         $model->started_at = 1607857566000;

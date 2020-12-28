@@ -56,6 +56,7 @@ class CreateBusProcessesTable extends Migration
                 )->default(Process::New);
                 $table->unsignedInteger('handlers')->default(1);
                 $table->json('results')->nullable();
+                $table->unsignedMediumInteger('pid')->nullable();
                 $table->{$this->config->get('users.primary.type')}('committed_by')->nullable();
                 $table->unsignedBigInteger('committed_at');
                 $table->unsignedBigInteger('started_at')->nullable();

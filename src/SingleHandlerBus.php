@@ -5,12 +5,11 @@ declare(strict_types=1);
 namespace Mrluke\Bus;
 
 use Carbon\Carbon;
+use Closure;
 use Exception;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\Queue\Queue;
 use Illuminate\Log\Logger;
-use Mrluke\Bus\Contracts\Trigger;
-use Mrluke\Bus\Extensions\ResolveDependencies;
 use ReflectionClass;
 
 use Mrluke\Bus\Contracts\Bus;
@@ -20,9 +19,11 @@ use Mrluke\Bus\Contracts\Instruction;
 use Mrluke\Bus\Contracts\Process;
 use Mrluke\Bus\Contracts\ProcessRepository;
 use Mrluke\Bus\Contracts\ShouldBeAsync;
+use Mrluke\Bus\Contracts\Trigger;
 use Mrluke\Bus\Exceptions\InvalidHandler;
 use Mrluke\Bus\Exceptions\MissingConfiguration;
 use Mrluke\Bus\Exceptions\MissingHandler;
+use Mrluke\Bus\Extensions\ResolveDependencies;
 use Mrluke\Bus\Extensions\TranslateResults;
 
 /**
@@ -42,49 +43,35 @@ abstract class SingleHandlerBus implements Bus
      *
      * @var bool
      */
-    public $cleanOnSuccess = true;
+    public bool $cleanOnSuccess = true;
 
     /**
      * The container implementation.
      *
      * @var \Illuminate\Contracts\Container\Container
      */
-    protected $container;
+    protected Container $container;
 
     /**
      * The command to handler mapping for non-self-handling events.
      *
      * @var array
      */
-    protected $handlers = [];
+    protected array $handlers = [];
 
     /**
      * Instance of app logger.
      *
      * @var \Illuminate\Log\Logger
      */
-    protected $logger;
-
-    /**
-     * The pipeline instance for the bus.
-     *
-     * @var \Illuminate\Pipeline\Pipeline
-     */
-    protected $pipeline;
-
-    /**
-     * The pipes to send commands through before dispatching.
-     *
-     * @var array
-     */
-    protected $pipes = [];
+    protected Logger $logger;
 
     /**
      * The process repository implementations.
      *
      * @var \Mrluke\Bus\Contracts\ProcessRepository
      */
-    protected $processRepository;
+    protected ProcessRepository $processRepository;
 
     /**
      * Return queue connection name.
@@ -98,21 +85,21 @@ abstract class SingleHandlerBus implements Bus
      *
      * @var \Closure|null
      */
-    protected $queueResolver;
+    protected ?Closure $queueResolver;
 
     /**
      * Determine if Bus should stop executing on exception.
      *
      * @var bool
      */
-    public $stopOnException = false;
+    public bool $stopOnException = false;
 
     /**
      * Determine if Bus should throw if there's no handler to process.
      *
      * @var bool
      */
-    public $throwWhenNoHandler = true;
+    public bool $throwWhenNoHandler = true;
 
     /**
      * @param \Mrluke\Bus\Contracts\ProcessRepository   $repository

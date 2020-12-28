@@ -29,17 +29,17 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
     /**
      * @var string
      */
-    private $bus;
+    private string $bus;
 
     /**
      * @var \Carbon\CarbonImmutable
      */
-    private $committedAt;
+    private CarbonImmutable $committedAt;
 
     /**
      * @var int|null
      */
-    private $committedBy;
+    private ?int $committedBy;
 
     /**
      * @var \Carbon\Carbon|null
@@ -49,17 +49,27 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
     /**
      * @var int
      */
-    private $handlers;
+    private int $handlers;
 
     /**
      * @var string
      */
-    private $id;
+    private string $id;
+
+    /**
+     * @var int|null
+     */
+    private ?int $pid;
 
     /**
      * @var string
      */
-    private $process;
+    private string $process;
+
+    /**
+     * @var array
+     */
+    private array $results;
 
     /**
      * @var \Carbon\Carbon|null
@@ -69,12 +79,7 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
     /**
      * @var string
      */
-    private $status;
-
-    /**
-     * @var array
-     */
-    private $results;
+    private string $status;
 
     /**
      * @param string                       $id
@@ -83,6 +88,7 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
      * @param string                       $status
      * @param int                          $handlers
      * @param array                        $results
+     * @param int|null                     $pid
      * @param int|null                     $committedBy
      * @param \Carbon\CarbonImmutable      $committedAt
      * @param \Carbon\CarbonImmutable|null $startedAt
@@ -96,6 +102,7 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
         string $status,
         int $handlers,
         array $results,
+        ?int $pid,
         ?int $committedBy,
         CarbonImmutable $committedAt,
         ?CarbonImmutable $startedAt = null,
@@ -107,6 +114,7 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
         $this->status = self::verifyStatus($status);
         $this->handlers = $handlers;
         $this->results = $results;
+        $this->pid = $pid;
         $this->committedBy = $committedBy;
         $this->committedAt = $committedAt;
         $this->startedAt = $startedAt;
@@ -180,6 +188,7 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
         }
 
         $id = Str::uuid()->toString();
+        $pid = getmypid() ? getmypid() : null;
 
         $results = [];
         foreach ($handlers as $h) {
@@ -193,6 +202,7 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
             ProcessContract::New,
             count($handlers),
             $results,
+            $pid,
             $auth,
             CarbonImmutable::now()
         );
@@ -305,6 +315,7 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
             $model->status,
             (int)$model->handlers,
             json_decode($model->results, true),
+            $model->pid,
             $model->committed_by,
             CarbonImmutable::createFromTimestampMs($model->committed_at),
             $model->started_at ? CarbonImmutable::createFromTimestampMs($model->started_at) : null,
@@ -418,6 +429,7 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
             'status'      => $this->status,
             'handlers'    => $this->handlers,
             'results'     => $this->results,
+            'pid'         => $this->pid,
             'committedBy' => $this->committedBy,
             'committedAt' => $this->committedAt->getPreciseTimestamp(3),
             'startedAt'   => $this->startedAt ? $this->startedAt->getPreciseTimestamp(3) : null,

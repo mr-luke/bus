@@ -27,14 +27,14 @@ class CommandBus extends SingleHandlerBus implements CommandBusContract, HasAsyn
      *
      * @var bool
      */
-    public $cleanOnSuccess = true;
+    public bool $cleanOnSuccess = true;
 
     /**
      * Determine if Bus should stop executing on exception.
      *
      * @var bool
      */
-    public $stopOnException = true;
+    public bool $stopOnException = true;
 
     /**
      * @inheritDoc
