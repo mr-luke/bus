@@ -18,13 +18,14 @@ interface Bus
     /**
      * Dispatch an instruction due to it's requirements.
      *
-     * @param \Mrluke\Bus\Contracts\Instruction         $instruction
+     * @param \Mrluke\Bus\Contracts\Instruction  $instruction
      * @param \Mrluke\Bus\Contracts\Trigger|null $trigger
      * @return \Mrluke\Bus\Contracts\Process|null
      * @throws \Mrluke\Bus\Exceptions\InvalidAction
      * @throws \Mrluke\Bus\Exceptions\InvalidHandler
      * @throws \Mrluke\Bus\Exceptions\MissingConfiguration
      * @throws \Mrluke\Bus\Exceptions\MissingHandler
+     * @throws \Mrluke\Bus\Exceptions\MissingProcess
      * @throws \Illuminate\Contracts\Container\BindingResolutionException
      * @throws \ReflectionException
      */
@@ -40,6 +41,7 @@ interface Bus
      * @throws \Mrluke\Bus\Exceptions\InvalidHandler
      * @throws \Mrluke\Bus\Exceptions\MissingConfiguration
      * @throws \Mrluke\Bus\Exceptions\MissingHandler
+     * @throws \Mrluke\Bus\Exceptions\MissingProcess
      * @throws \Illuminate\Contracts\Container\BindingResolutionException
      * @throws \ReflectionException
      */
@@ -74,12 +76,4 @@ interface Bus
      * @return $this
      */
     public function map(array $map): self;
-
-    /**
-     * Set the pipes through which commands should be piped before dispatching.
-     *
-     * @param array $pipes
-     * @return $this
-     */
-    public function pipeThrough(array $pipes): self;
 }

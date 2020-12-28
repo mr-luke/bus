@@ -13,12 +13,4 @@ namespace Mrluke\Bus\Contracts;
  * @link    https://github.com/mr-luke/bus
  * @package Mrluke\Bus\Contracts
  */
-interface HasAsyncProcesses
-{
-    /**
-     * Return queue name.
-     *
-     * @return string|null
-     */
-    public function onQueue(): ?string;
-}
+interface AsyncBus extends HasAsyncProcesses {}

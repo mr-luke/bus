@@ -12,6 +12,7 @@ use Illuminate\Contracts\Queue\Queue;
 use Illuminate\Log\Logger;
 use ReflectionClass;
 
+use Mrluke\Bus\Contracts\AsyncBus;
 use Mrluke\Bus\Contracts\Bus;
 use Mrluke\Bus\Contracts\Handler;
 use Mrluke\Bus\Contracts\HasAsyncProcesses;
@@ -72,13 +73,6 @@ abstract class SingleHandlerBus implements Bus
      * @var \Mrluke\Bus\Contracts\ProcessRepository
      */
     protected ProcessRepository $processRepository;
-
-    /**
-     * Return queue connection name.
-     *
-     * @var null
-     */
-    protected $queueConnection = null;
 
     /**
      * The queue resolver callback.
@@ -147,7 +141,7 @@ abstract class SingleHandlerBus implements Bus
         $handlers = $this->handler($trigger);
         $process = $this->createProcess($instruction, $handlers);
 
-        if ($instruction instanceof ShouldBeAsync) {
+        if ($instruction instanceof ShouldBeAsync || $this instanceof AsyncBus) {
             /** @var Instruction $instruction */
             $this->runAsync(
                 $process,
@@ -236,17 +230,6 @@ abstract class SingleHandlerBus implements Bus
     }
 
     /**
-     * @inheritDoc
-     * @codeCoverageIgnore
-     */
-    public function pipeThrough(array $pipes): Bus
-    {
-        $this->pipes = $pipes;
-
-        return $this;
-    }
-
-    /**
      * Return delay.
      *
      * @param \Mrluke\Bus\Contracts\Instruction $instruction
@@ -255,7 +238,7 @@ abstract class SingleHandlerBus implements Bus
     protected function considerDelay(Instruction $instruction): ?Carbon
     {
         /* @var HasAsyncProcesses $this */
-        return property_exists($instruction, 'delay') ? $instruction->delay : $this->delay();
+        return property_exists($instruction, 'delay') ? $instruction->delay : null;
     }
 
     /**
@@ -313,13 +296,14 @@ abstract class SingleHandlerBus implements Bus
         if (!$this instanceof HasAsyncProcesses) {
             throw new MissingConfiguration(
                 sprintf(
-                    'To use async instructions Bus has to be an instance of [%s]',
-                    HasAsyncProcesses::class
+                    'To use async instructions Bus has to be an instance of either [%s] or [%s]',
+                    HasAsyncProcesses::class,
+                    AsyncBus::class
                 )
             );
         }
 
-        $queue = call_user_func($this->queueResolver, $this->queueConnection);
+        $queue = call_user_func($this->queueResolver, $this->onQueue());
         $this->verifyQueueInstance($queue);
 
         $delay = $this->considerDelay($instruction);

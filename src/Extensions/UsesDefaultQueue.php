@@ -2,8 +2,6 @@
 
 namespace Mrluke\Bus\Extensions;
 
-use Carbon\Carbon;
-
 /**
  * Adds default queue for processing.
  *
@@ -15,19 +13,12 @@ use Carbon\Carbon;
  */
 trait UsesDefaultQueue
 {
-    protected $delay = null;
-
-    protected $queue = null;
-
     /**
-     * Return async delay.
-     * @return \Carbon\Carbon|null
-     * @codeCoverageIgnore
+     * Async processes Queue name.
+     *
+     * @var string|null
      */
-    public function delay(): ?Carbon
-    {
-        return $this->delay;
-    }
+    public ?string $queueName = null;
 
     /**
      * Return queue name.
@@ -37,6 +28,6 @@ trait UsesDefaultQueue
      */
     public function onQueue(): ?string
     {
-        return $this->queue;
+        return $this->queueName;
     }
 }
