@@ -30,6 +30,19 @@ class DatabaseProcessRepositoryTest extends TestCase
         );
     }
 
+    public function testIfCancelThrowsWhenIncorrectTypeOfProcessIdGiven()
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        $repository = new DatabaseProcessRepository(
+            $this->getMockBuilder(ArrayHost::class)->getMock(),
+            $this->getMockBuilder(Connection::class)->disableOriginalConstructor()->getMock(),
+            $this->getMockBuilder(Guard::class)->getMock()
+        );
+
+        $repository->cancel(1);
+    }
+
     /**
      * @throws \Mrluke\Bus\Exceptions\InvalidAction
      */

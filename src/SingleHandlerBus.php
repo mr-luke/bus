@@ -347,6 +347,7 @@ abstract class SingleHandlerBus implements Bus
      * @throws \Illuminate\Contracts\Container\BindingResolutionException
      * @throws \Mrluke\Bus\Exceptions\InvalidAction
      * @throws \Mrluke\Bus\Exceptions\MissingHandler
+     * @throws \Mrluke\Bus\Exceptions\MissingProcess
      * @throws \ReflectionException
      */
     protected function run(
@@ -364,10 +365,10 @@ abstract class SingleHandlerBus implements Bus
             );
         }
 
-        $process->finish();
+        $this->processRepository->finish($process);
 
         if ($this->cleanOnSuccess) {
-            $this->processRepository->delete($process->id());
+            $this->processRepository->delete($process);
         }
     }
 
@@ -403,6 +404,7 @@ abstract class SingleHandlerBus implements Bus
      * @param \Mrluke\Bus\Contracts\Handler     $handler
      * @throws \Mrluke\Bus\Exceptions\InvalidAction
      * @throws \Mrluke\Bus\Exceptions\MissingHandler
+     * @throws \Mrluke\Bus\Exceptions\MissingProcess
      */
     protected function runSingleProcess(
         Process $process,
@@ -412,15 +414,21 @@ abstract class SingleHandlerBus implements Bus
         try {
             $result = $handler->handle($instruction);
 
-            $process->applyResult(
+            $this->processRepository->applySubResult(
+                $process,
                 get_class($handler),
                 Process::Succeed,
                 $this->processResult($result)
             );
 
         } catch (Exception $e) {
-            $process->applyResult(get_class($handler), Process::Failed, $e->getMessage());
             $this->logger->error($e);
+            $this->processRepository->applySubResult(
+                $process,
+                get_class($handler),
+                Process::Failed,
+                $e->getMessage()
+            );
 
             if ($this->stopOnException) {
                 throw $e;

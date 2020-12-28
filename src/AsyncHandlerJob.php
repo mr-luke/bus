@@ -85,15 +85,15 @@ class AsyncHandlerJob implements ShouldQueue
 
         try {
             if (!$process->isPending()) {
-                $repository->start($this->processId);
+                $repository->start($process);
             }
 
             $result = $this->processResult(
                 $handler->handle($this->instruction)
             );
 
-            $process = $repository->applySubResult(
-                $this->processId,
+            $repository->applySubResult(
+                $process,
                 $this->handlerClass,
                 ProcessContract::Succeed,
                 $result
@@ -109,18 +109,17 @@ class AsyncHandlerJob implements ShouldQueue
             );
 
         }  catch (Exception $e) {
-            $process = $repository->applySubResult(
-                $this->processId,
+            $logger->error($e);
+            $repository->applySubResult(
+                $process,
                 $this->handlerClass,
                 ProcessContract::Failed,
                 $e->getMessage()
             );
-
-            $logger->error($e);
         }
 
         if ($process->qualifyAsFinished()) {
-            $repository->finish($this->processId);
+            $repository->finish($process);
 
             $logger->debug('Process finished.', ['process' => $this->processId]);
         }

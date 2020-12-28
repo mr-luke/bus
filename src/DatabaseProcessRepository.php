@@ -9,6 +9,7 @@ use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use Mrluke\Configuration\Contracts\ArrayHost;
 
 use Mrluke\Bus\Contracts\Process;
@@ -32,19 +33,19 @@ class DatabaseProcessRepository implements ProcessRepository
      *
      * @var \Mrluke\Configuration\Contracts\ArrayHost
      */
-    protected $config;
+    protected ArrayHost $config;
 
     /**
      * The database connection instance.
      *
      * @var \Illuminate\Database\Connection
      */
-    protected $connection;
+    protected Connection $connection;
 
     /**
      * @var \Illuminate\Contracts\Auth\Guard
      */
-    protected $guard;
+    protected Guard $guard;
 
     /**
      * @param \Mrluke\Configuration\Contracts\ArrayHost $config
@@ -62,14 +63,15 @@ class DatabaseProcessRepository implements ProcessRepository
      * @inheritDoc
      */
     public function applySubResult(
-        string $processId,
+        $processId,
         string $handler,
         string $status,
         string $feedback = null
     ): Process {
-        $process = $this->find($processId);
+        $this->validateIdentifier($processId);
+        $process = is_string($processId) ? $this->find($processId) : $processId;
 
-        $this->getBuilder()->where('id', $processId)->update(
+        $this->getBuilder()->where('id', $process->id())->update(
             [
                 'results' => $process->applyResult($handler, $status, $feedback),
                 'status'  => $process->status()
@@ -82,17 +84,18 @@ class DatabaseProcessRepository implements ProcessRepository
     /**
      * @inheritDoc
      */
-    public function cancel(string $processId): Process
+    public function cancel($processId): Process
     {
-        $process = $this->find($processId);
+        $this->validateIdentifier($processId);
+        $process = is_string($processId) ? $this->find($processId) : $processId;
 
         if ($process->isPending() || $process->isFinished()) {
             throw new InvalidAction(
-                sprintf('Cannot cancel touched process [%s]', $processId)
+                sprintf('Cannot cancel touched process [%s]', $process->id())
             );
         }
 
-        $this->getBuilder()->where('id', $processId)->update(
+        $this->getBuilder()->where('id', $process->id())->update(
             [
                 'finished_at' => $process->cancel(),
                 'status'      => $process->status()
@@ -146,9 +149,13 @@ class DatabaseProcessRepository implements ProcessRepository
     /**
      * @inheritDoc
      */
-    public function delete(string $processId): void
+    public function delete($processId): void
     {
-        $this->getBuilder()->delete($processId);
+        $this->validateIdentifier($processId);
+
+        $this->getBuilder()->delete(
+            is_string($processId) ? $processId : $processId->id()
+        );
     }
 
     /**
@@ -170,17 +177,18 @@ class DatabaseProcessRepository implements ProcessRepository
     /**
      * @inheritDoc
      */
-    public function finish(string $processId): Process
+    public function finish($processId): Process
     {
-        $process = $this->find($processId);
+        $this->validateIdentifier($processId);
+        $process = is_string($processId) ? $this->find($processId) : $processId;
 
         if ($process->isFinished()) {
             throw new InvalidAction(
-                sprintf('Trying to finish already finished process [%s].', $processId)
+                sprintf('Trying to finish already finished process [%s].', $process->id())
             );
         }
 
-        $this->getBuilder()->where('id', $processId)->update(
+        $this->getBuilder()->where('id', $process->id())->update(
             [
                 'finished_at' => $process->finish(),
                 'status'      => $process->status()
@@ -193,17 +201,18 @@ class DatabaseProcessRepository implements ProcessRepository
     /**
      * @inheritDoc
      */
-    public function start(string $processId): Process
+    public function start($processId): Process
     {
-        $process = $this->find($processId);
+        $this->validateIdentifier($processId);
+        $process = is_string($processId) ? $this->find($processId) : $processId;
 
         if ($process->isPending()) {
             throw new InvalidAction(
-                sprintf('Process [%s] already started.', $processId)
+                sprintf('Process [%s] already started.', $process->id())
             );
         }
 
-        $this->getBuilder()->where('id', $processId)->update(
+        $this->getBuilder()->where('id', $process->id())->update(
             [
                 'started_at' => $process->start(),
                 'status'     => $process->status()
@@ -221,5 +230,20 @@ class DatabaseProcessRepository implements ProcessRepository
     private function getBuilder(): Builder
     {
         return $this->connection->table($this->config->get('table'));
+    }
+
+    /**
+     * Determine if processId has correct type.
+     *
+     * @param $processId
+     * @return void
+     */
+    private function validateIdentifier($processId): void
+    {
+        if (!is_string($processId) && !$processId instanceof Process) {
+            throw new InvalidArgumentException(
+                sprintf('ProcessId argument must be type of string or %s', Process::class)
+            );
+        }
     }
 }
