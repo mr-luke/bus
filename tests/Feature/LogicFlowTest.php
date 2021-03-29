@@ -21,6 +21,7 @@ use Tests\AppCase;
 use Tests\Components\AsyncHelloCommand;
 use Tests\Components\DependencyErrorHandler;
 use Tests\Components\ErrorHandler;
+use Tests\Components\ForceSyncHelloHandler;
 use Tests\Components\HelloCommand;
 use Tests\Components\HelloHandler;
 use Tests\Components\MultiBus;
@@ -337,5 +338,30 @@ class LogicFlowTest extends AppCase
         $bus->map([AsyncHelloCommand::class => [HelloHandler::class, ErrorHandler::class]]);
 
         $bus->dispatch(new AsyncHelloCommand('Hello new world'));
+    }
+
+    public function testAsyncCommandWithForcedHandlerFiresLessJobs()
+    {
+        $this->expectsJobs([AsyncHandlerJob::class]);
+
+        $container = $this->app->make(Container::class);
+
+        /* @var CommandBus $bus */
+        $bus = new MultiBus(
+            $this->app->make(ProcessRepository::class),
+            $container,
+            $this->app->make(Logger::class),
+            function($connection = null) use ($container) {
+                return $container->make(Factory::class)->connection($connection);
+            }
+        );
+
+        $bus->map([AsyncHelloCommand::class => [HelloHandler::class, ForceSyncHelloHandler::class]]);
+
+        $process = $bus->dispatch(new AsyncHelloCommand('Hello new world'));
+
+        $this->assertTrue(
+            $process->isPending()
+        );
     }
 }
