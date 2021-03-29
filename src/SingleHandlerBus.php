@@ -142,24 +142,12 @@ abstract class SingleHandlerBus implements Bus
         $handlers = $this->handler($trigger);
         $process = $this->createProcess($instruction, $handlers);
 
-        $shouldBeAsync = $instruction instanceof ShouldBeAsync || $this instanceof AsyncBus;
-        foreach ($handlers as $class) {
-            $reflection = new ReflectionClass($class);
-            if ($shouldBeAsync && !$reflection->implementsInterface(ForceSync::class)) {
-                /** @var Instruction $instruction */
-                $this->runAsync(
-                    $process,
-                    $instruction,
-                    $class
-                );
-            } else {
-                $this->run(
-                    $process,
-                    $instruction,
-                    $class
-                );
-            }
-        }
+        $this->processHandlersStack(
+            $instruction,
+            $process,
+            $handlers,
+            $instruction instanceof ShouldBeAsync || $this instanceof AsyncBus
+        );
 
         return $process;
     }
@@ -283,6 +271,44 @@ abstract class SingleHandlerBus implements Bus
      * @codeCoverageIgnore
      */
     abstract protected function getBusName(): string;
+
+    /**
+     * Process handlers stack.
+     *
+     * @param \Mrluke\Bus\Contracts\Instruction $instruction
+     * @param \Mrluke\Bus\Contracts\Process     $process
+     * @param array                             $handlers
+     * @param bool                              $shouldBeAsync
+     * @throws \Illuminate\Contracts\Container\BindingResolutionException
+     * @throws \Mrluke\Bus\Exceptions\InvalidAction
+     * @throws \Mrluke\Bus\Exceptions\MissingConfiguration
+     * @throws \Mrluke\Bus\Exceptions\MissingHandler
+     * @throws \Mrluke\Bus\Exceptions\MissingProcess
+     * @throws \ReflectionException
+     */
+    protected function processHandlersStack(
+        Instruction $instruction,
+        Process $process,
+        array $handlers,
+        bool $shouldBeAsync
+    ): void {
+        foreach ($handlers as $class) {
+            $reflection = new ReflectionClass($class);
+            if ($shouldBeAsync && !$reflection->implementsInterface(ForceSync::class)) {
+                $this->runAsync(
+                    $process,
+                    $instruction,
+                    $class
+                );
+            } else {
+                $this->run(
+                    $process,
+                    $instruction,
+                    $class
+                );
+            }
+        }
+    }
 
     /**
      * Push the instruction to Queue.
