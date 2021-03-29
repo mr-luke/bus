@@ -42,9 +42,9 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
     private ?int $committedBy;
 
     /**
-     * @var \Carbon\Carbon|null
+     * @var \Carbon\CarbonImmutable|null
      */
-    private $finishedAt;
+    private ?CarbonImmutable $finishedAt;
 
     /**
      * @var int
@@ -72,9 +72,9 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
     private array $results;
 
     /**
-     * @var \Carbon\Carbon|null
+     * @var \Carbon\CarbonImmutable|null
      */
-    private $startedAt;
+    private ?CarbonImmutable $startedAt;
 
     /**
      * @var string

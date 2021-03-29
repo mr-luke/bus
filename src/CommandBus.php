@@ -40,7 +40,7 @@ class CommandBus extends SingleHandlerBus implements CommandBusContract, HasAsyn
      * @inheritDoc
      * @codeCoverageIgnore
      */
-    public function publish(Command $command): Process
+    public function publish(Command $command): ?Process
     {
         return $this->dispatch($command);
     }

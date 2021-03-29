@@ -128,7 +128,12 @@ class DatabaseProcessRepository implements ProcessRepository
             throw new InvalidAction('Cannot create process with no handlers');
         }
 
-        $process = \Mrluke\Bus\Process::create($busName, $process, $handlers, $this->guard->id());
+        $process = \Mrluke\Bus\Process::create(
+            $busName,
+            $process,
+            $handlers,
+            intval($this->guard->id())
+        );
 
         $payload = [];
         foreach ($process->toArray() as $k => $v) {

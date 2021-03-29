@@ -19,13 +19,14 @@ interface CommandBus extends Bus
      * Dispatch an instruction due to it's requirements.
      *
      * @param \Mrluke\Bus\Contracts\Command $command
-     * @return \Mrluke\Bus\Contracts\Process|void
+     * @return \Mrluke\Bus\Contracts\Process|null
      * @throws \Mrluke\Bus\Exceptions\InvalidAction
      * @throws \Mrluke\Bus\Exceptions\InvalidHandler
      * @throws \Mrluke\Bus\Exceptions\MissingConfiguration
      * @throws \Mrluke\Bus\Exceptions\MissingHandler
+     * @throws \Mrluke\Bus\Exceptions\MissingProcess
      * @throws \Illuminate\Contracts\Container\BindingResolutionException
      * @throws \ReflectionException
      */
-    public function publish(Command $command): Process;
+    public function publish(Command $command): ?Process;
 }

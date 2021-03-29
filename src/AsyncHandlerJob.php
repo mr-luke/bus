@@ -25,26 +25,26 @@ class AsyncHandlerJob implements ShouldQueue
      *
      * @var bool
      */
-    protected $cleanOnSuccess;
+    protected bool $cleanOnSuccess;
 
     /**
      * @var \Mrluke\Bus\Contracts\Instruction
      */
-    protected $instruction;
+    protected Instruction $instruction;
 
     /**
      * Handler class used to process the instruction.
      *
-     * @var \Mrluke\Bus\Contracts\Handler
+     * @var string
      */
-    protected $handlerClass;
+    protected string $handlerClass;
 
     /**
      * The process id.
      *
      * @var string
      */
-    protected $processId;
+    protected string $processId;
 
     /**
      * @param string                            $processId

@@ -79,7 +79,7 @@ class CreateBusProcessesTable extends Migration
      */
     public function down()
     {
-        if ($tableName = $this->config->get('users.table')) {
+        if ($this->config->get('users.table')) {
             Schema::table(
                 $this->config->get('table'),
                 function(Blueprint $table) {

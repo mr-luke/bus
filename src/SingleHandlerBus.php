@@ -101,6 +101,7 @@ abstract class SingleHandlerBus implements Bus
      * @param \Illuminate\Contracts\Container\Container $container
      * @param \Illuminate\Log\Logger                    $logger
      * @param \Closure|null                             $queueResolver
+     * @throws \Mrluke\Bus\Exceptions\MissingConfiguration
      */
     public function __construct(
         ProcessRepository $repository,
@@ -108,6 +109,10 @@ abstract class SingleHandlerBus implements Bus
         Logger $logger,
         $queueResolver = null
     ) {
+        if ($this instanceof HasAsyncProcesses && is_null($queueResolver)) {
+            throw new  MissingConfiguration('Queue Resolver must be Closure. Null given.');
+        }
+
         $this->processRepository = $repository;
 
         $this->container = $container;
@@ -120,16 +125,19 @@ abstract class SingleHandlerBus implements Bus
      */
     public function dispatch(Instruction $instruction, Trigger $trigger = null): ?Process
     {
-        if (is_null($trigger) && !$instruction instanceof Trigger) {
-            throw new MissingConfiguration(
-                sprintf(
-                    'An instruction [%s] must implements [%s] contract to trigger handlers.',
-                    get_class($instruction),
-                    Trigger::class
-                )
-            );
+        if (is_null($trigger)) {
+            if (!$instruction instanceof Trigger) {
+                throw new MissingConfiguration(
+                    sprintf(
+                        'An instruction [%s] must implements [%s] contract to trigger handlers.',
+                        get_class($instruction),
+                        Trigger::class
+                    )
+                );
+            }
+
+            $trigger = $instruction;
         }
-        $trigger = is_null($trigger) ? $instruction : $trigger;
 
         if (!$this->hasHandler($trigger)) {
             if (!$this->throwWhenNoHandler) {
