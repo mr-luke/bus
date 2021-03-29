@@ -34,11 +34,11 @@ final class BusServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
+        $this->loadMigrationsFrom(__DIR__ .'/../database/migrations');
 
-        $this->publishes([__DIR__ . '/../config/bus.php' => config_path('bus.php')], 'config');
+        $this->publishes([__DIR__ .'/../config/bus.php' => config_path('bus.php')], 'config');
         $this->publishes(
-            [__DIR__ . '/../database/migrations/' => database_path('migrations')],
+            [__DIR__ .'/../database/migrations/' => database_path('migrations')],
             'migrations'
         );
     }
@@ -50,14 +50,14 @@ final class BusServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->mergeConfigFrom(__DIR__ . '/../config/bus.php', 'bus');
+        $this->mergeConfigFrom(__DIR__ .'/../config/bus.php', 'bus');
 
         /*
          * Async Handler Job's handle method binding.
          *
          */
         $this->app->bindMethod(
-            AsyncHandlerJob::class . '@handle',
+            AsyncHandlerJob::class .'@handle',
             function($job, $app) {
                 return $job->handle(
                     $app->make(ProcessRepository::class),
@@ -94,7 +94,7 @@ final class BusServiceProvider extends ServiceProvider
             Config::class,
             function($app) {
                 $schema = Schema::createFromFile(
-                    __DIR__ . '/../config/schema.json',
+                    __DIR__ .'/../config/schema.json',
                     true
                 );
 

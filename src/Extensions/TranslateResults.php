@@ -27,7 +27,7 @@ trait TranslateResults
         }
 
         if (is_bool($mixedResults) || is_numeric($mixedResults) || is_string($mixedResults)) {
-            return (string) $mixedResults;
+            return (string)$mixedResults;
         }
 
         return null;

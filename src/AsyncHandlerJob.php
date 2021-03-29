@@ -108,7 +108,7 @@ class AsyncHandlerJob implements ShouldQueue
                 ]
             );
 
-        }  catch (Exception $e) {
+        } catch (Exception $e) {
             $logger->error($e);
             $repository->applySubResult(
                 $process,

@@ -132,7 +132,7 @@ class DatabaseProcessRepository implements ProcessRepository
             $busName,
             $process,
             $handlers,
-            intval($this->guard->id())
+            $this->guard->id()
         );
 
         $payload = [];

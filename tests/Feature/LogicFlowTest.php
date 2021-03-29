@@ -289,7 +289,7 @@ class LogicFlowTest extends AppCase
             $this->app->make(ProcessRepository::class),
             $this->app->make(Container::class),
             $this->app->make(Logger::class),
-            null
+            function () {}
         );
 
         $bus->map([HelloCommand::class => [HelloHandler::class, ErrorHandler::class]]);

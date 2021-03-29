@@ -84,7 +84,7 @@ class CreateBusProcessesTable extends Migration
                 $this->config->get('table'),
                 function(Blueprint $table) {
                     $table->dropForeign(
-                       $this->config->get('table') . '_committed_by_foreign'
+                        $this->config->get('table') . '_committed_by_foreign'
                     );
                 }
             );
