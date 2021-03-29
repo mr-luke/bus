@@ -14,6 +14,7 @@ use ReflectionClass;
 
 use Mrluke\Bus\Contracts\AsyncBus;
 use Mrluke\Bus\Contracts\Bus;
+use Mrluke\Bus\Contracts\ForceSync;
 use Mrluke\Bus\Contracts\Handler;
 use Mrluke\Bus\Contracts\HasAsyncProcesses;
 use Mrluke\Bus\Contracts\Instruction;
@@ -45,6 +46,20 @@ abstract class SingleHandlerBus implements Bus
      * @var bool
      */
     public bool $cleanOnSuccess = true;
+
+    /**
+     * Determine if Bus should stop executing on exception.
+     *
+     * @var bool
+     */
+    public bool $stopOnException = false;
+
+    /**
+     * Determine if Bus should throw if there's no handler to process.
+     *
+     * @var bool
+     */
+    public bool $throwWhenNoHandler = true;
 
     /**
      * The container implementation.
@@ -80,20 +95,6 @@ abstract class SingleHandlerBus implements Bus
      * @var \Closure|null
      */
     protected ?Closure $queueResolver;
-
-    /**
-     * Determine if Bus should stop executing on exception.
-     *
-     * @var bool
-     */
-    public bool $stopOnException = false;
-
-    /**
-     * Determine if Bus should throw if there's no handler to process.
-     *
-     * @var bool
-     */
-    public bool $throwWhenNoHandler = true;
 
     /**
      * @param \Mrluke\Bus\Contracts\ProcessRepository   $repository
@@ -141,19 +142,23 @@ abstract class SingleHandlerBus implements Bus
         $handlers = $this->handler($trigger);
         $process = $this->createProcess($instruction, $handlers);
 
-        if ($instruction instanceof ShouldBeAsync || $this instanceof AsyncBus) {
-            /** @var Instruction $instruction */
-            $this->runAsync(
-                $process,
-                $instruction,
-                $handlers
-            );
-        } else {
-            $this->run(
-                $process,
-                $instruction,
-                $handlers
-            );
+        $shouldBeAsync = $instruction instanceof ShouldBeAsync || $this instanceof AsyncBus;
+        foreach ($handlers as $class) {
+            $reflection = new ReflectionClass($class);
+            if ($shouldBeAsync && !$reflection->implementsInterface(ForceSync::class)) {
+                /** @var Instruction $instruction */
+                $this->runAsync(
+                    $process,
+                    $instruction,
+                    $class
+                );
+            } else {
+                $this->run(
+                    $process,
+                    $instruction,
+                    $class
+                );
+            }
         }
 
         return $process;
@@ -163,7 +168,8 @@ abstract class SingleHandlerBus implements Bus
      * @inheritDoc
      * @codeCoverageIgnore
      */
-    public function dispatchMultiple(Trigger $trigger, array $instructions): array {
+    public function dispatchMultiple(Trigger $trigger, array $instructions): array
+    {
         $processes = [];
 
         foreach ($instructions as $i) {
@@ -326,7 +332,7 @@ abstract class SingleHandlerBus implements Bus
      *
      * @param \Mrluke\Bus\Contracts\Process     $process
      * @param \Mrluke\Bus\Contracts\Instruction $instruction
-     * @param array                             $handlerStack
+     * @param string                            $handlerClass
      * @return void
      * @throws \Illuminate\Contracts\Container\BindingResolutionException
      * @throws \Mrluke\Bus\Exceptions\InvalidAction
@@ -337,22 +343,24 @@ abstract class SingleHandlerBus implements Bus
     protected function run(
         Process $process,
         Instruction $instruction,
-        array $handlerStack
+        string $handlerClass
     ): void {
-        $process->start();
-
-        foreach ($handlerStack as $class) {
-            $this->runSingleProcess(
-                $process,
-                $instruction,
-                $this->resolveClass($this->container, $class)
-            );
+        if ($process->qualifyToStart()) {
+            $this->processRepository->start($process);
         }
 
-        $this->processRepository->finish($process);
+        $this->runSingleProcess(
+            $process,
+            $instruction,
+            $this->resolveClass($this->container, $handlerClass)
+        );
 
-        if ($this->cleanOnSuccess) {
-            $this->processRepository->delete($process);
+        if ($process->qualifyAsFinished()) {
+            $this->processRepository->finish($process);
+
+            if ($this->cleanOnSuccess) {
+                $this->processRepository->delete($process);
+            }
         }
     }
 
@@ -361,23 +369,21 @@ abstract class SingleHandlerBus implements Bus
      *
      * @param \Mrluke\Bus\Contracts\Process     $process
      * @param \Mrluke\Bus\Contracts\Instruction $instruction
-     * @param array                             $handlerStack
+     * @param string                            $handlerClass
      * @return void
      * @throws \Mrluke\Bus\Exceptions\MissingConfiguration
      */
     protected function runAsync(
         Process $process,
         Instruction $instruction,
-        array $handlerStack
+        string $handlerClass
     ): void {
-        foreach ($handlerStack as $class) {
-            $this->pushInstructionToQueue(
-                $process->id(),
-                $instruction,
-                $class,
-                $this->cleanOnSuccess
-            );
-        }
+        $this->pushInstructionToQueue(
+            $process->id(),
+            $instruction,
+            $handlerClass,
+            $this->cleanOnSuccess
+        );
     }
 
     /**
