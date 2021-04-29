@@ -9,17 +9,17 @@ use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use JsonSerializable;
-use stdClass;
-
 use Mrluke\Bus\Contracts\Process as ProcessContract;
 use Mrluke\Bus\Exceptions\InvalidAction;
 use Mrluke\Bus\Exceptions\MissingHandler;
+use stdClass;
 
 /**
  * Class Process
  *
  * @author  Łukasz Sitnicki <lukasz.sitnicki@movecloser.pl>
- * @version 1.0.0
+ * @author  Krzysztof Ustowski <krzysztof.ustowski@movecloser.pl>
+ * @version 1.1.0
  * @licence MIT
  * @link    https://github.com/mr-luke/bus
  * @package Mrluke\Bus
@@ -82,12 +82,28 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
     private string $status;
 
     /**
+     * List of related processes
+     *
+     * @var array
+     */
+    private array $related;
+
+    /**
+     * List of serialized HanderResult data
+     *
+     * @var array
+     */
+    private array $data;
+
+    /**
      * @param string                       $id
      * @param string                       $bus
      * @param string                       $process
      * @param string                       $status
      * @param int                          $handlers
      * @param array                        $results
+     * @param array                        $related
+     * @param array                        $data
      * @param int|null                     $pid
      * @param string|int|null              $committedBy
      * @param \Carbon\CarbonImmutable      $committedAt
@@ -102,23 +118,53 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
         string $status,
         int $handlers,
         array $results,
+        array $related,
+        array $data,
         ?int $pid,
         $committedBy,
         CarbonImmutable $committedAt,
         ?CarbonImmutable $startedAt = null,
         ?CarbonImmutable $finishedAt = null
     ) {
-        $this->id = $id;
-        $this->bus = $bus;
-        $this->process = $process;
-        $this->status = self::verifyStatus($status);
-        $this->handlers = $handlers;
-        $this->results = $results;
-        $this->pid = $pid;
+        $this->id          = $id;
+        $this->bus         = $bus;
+        $this->process     = $process;
+        $this->status      = self::verifyStatus($status);
+        $this->handlers    = $handlers;
+        $this->results     = $results;
+        $this->related     = $related;
+        $this->data        = $data;
+        $this->pid         = $pid;
         $this->committedBy = $committedBy;
         $this->committedAt = $committedAt;
-        $this->startedAt = $startedAt;
-        $this->finishedAt = $finishedAt;
+        $this->startedAt   = $startedAt;
+        $this->finishedAt  = $finishedAt;
+    }
+
+    /**
+     * Apply handler data object to process.
+     *
+     * @param \Serializable $data
+     * @return array
+     */
+    public function applyData(\Serializable $data): array
+    {
+        $this->data = array_merge($this->data, [$data]);
+
+        return array_merge($this->data, [serialize($data)]);
+    }
+
+    /**
+     * Apply result for given handler.
+     *
+     * @param array $related
+     * @return array
+     */
+    public function applyRelated(array $related): array
+    {
+        $this->related = array_merge($this->related, $related);
+
+        return $this->results;
     }
 
     /**
@@ -134,7 +180,7 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
     public function applyResult(
         string $handler,
         string $status,
-        ?string $feedback = null
+        string $feedback
     ): array {
         $status = self::verifySubStatus($status);
 
@@ -146,7 +192,7 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
 
         $this->results[$handler] = array_merge(
             ['status' => $status],
-            $feedback ? ['feedback' => $feedback] : []
+            $feedback !== '' ? ['feedback' => $feedback] : []
         );
 
         return $this->results;
@@ -159,7 +205,7 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
      */
     public function cancel(): int
     {
-        $this->status = ProcessContract::Canceled;
+        $this->status     = ProcessContract::Canceled;
         $this->finishedAt = CarbonImmutable::now();
 
         return (int)$this->finishedAt->valueOf();
@@ -187,7 +233,7 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
             );
         }
 
-        $id = Str::uuid()->toString();
+        $id  = Str::uuid()->toString();
         $pid = getmypid() ? getmypid() : null;
 
         $results = [];
@@ -205,6 +251,67 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
             $pid,
             $auth,
             CarbonImmutable::now()
+        );
+    }
+
+    /**
+     * Mark process as finished.
+     *
+     * @return int
+     * @throws \Mrluke\Bus\Exceptions\InvalidAction
+     */
+    public function finish(): int
+    {
+        if (!$this->qualifyAsFinished()) {
+            throw new InvalidAction(
+                sprintf('Process [%s] cannot be finished. It\'s still pending.', $this->id)
+            );
+        }
+
+        $this->status     = ProcessContract::Finished;
+        $this->finishedAt = CarbonImmutable::now();
+
+        return (int)$this->finishedAt->valueOf();
+    }
+
+    /**
+     * Create instance from database model.
+     *
+     * @param \stdClass $model
+     * @return \Mrluke\Bus\Contracts\Process
+     * @throws \Mrluke\Bus\Exceptions\InvalidAction
+     */
+    public static function fromDatabase(stdClass $model): ProcessContract
+    {
+        $toCheck = ['committed_at', 'started_at', 'finished_at'];
+
+        foreach ($toCheck as $f) {
+            if ($model->{$f} !== null && ($model->{$f} >> 40) < 1) {
+                throw new InvalidArgumentException(
+                    sprintf('Model property [%s] requires microtime precision.', $f)
+                );
+            }
+        }
+
+        return new self(
+            $model->id,
+            $model->bus,
+            $model->process,
+            $model->status,
+            (int)$model->handlers,
+            json_decode($model->results, true),
+            $model->related,
+            array_filter(
+                $model->data,
+                function($item) {
+                    return unserialize($item);
+                }
+            ),
+            $model->pid,
+            $model->committed_by,
+            CarbonImmutable::createFromTimestampMs($model->committed_at),
+            $model->started_at ? CarbonImmutable::createFromTimestampMs($model->started_at) : null,
+            $model->finished_at ? CarbonImmutable::createFromTimestampMs($model->finished_at) : null
         );
     }
 
@@ -270,63 +377,7 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
     }
 
     /**
-     * Mark process as finished.
-     *
-     * @return int
-     * @throws \Mrluke\Bus\Exceptions\InvalidAction
-     */
-    public function finish(): int
-    {
-        if (!$this->qualifyAsFinished()) {
-            throw new InvalidAction(
-                sprintf('Process [%s] cannot be finished. It\'s still pending.', $this->id)
-            );
-        }
-
-        $this->status = ProcessContract::Finished;
-        $this->finishedAt = CarbonImmutable::now();
-
-        return (int)$this->finishedAt->valueOf();
-    }
-
-    /**
-     * Create instance from database model.
-     *
-     * @param \stdClass $model
-     * @return \Mrluke\Bus\Contracts\Process
-     * @throws \Mrluke\Bus\Exceptions\InvalidAction
-     */
-    public static function fromDatabase(stdClass $model): ProcessContract
-    {
-        $toCheck = ['committed_at', 'started_at', 'finished_at'];
-
-        foreach ($toCheck as $f) {
-            if ($model->{$f} !== null && ($model->{$f} >> 40) < 1) {
-                throw new InvalidArgumentException(
-                    sprintf('Model property [%s] requires microtime precision.', $f)
-                );
-            }
-        }
-
-        return new self(
-            $model->id,
-            $model->bus,
-            $model->process,
-            $model->status,
-            (int)$model->handlers,
-            json_decode($model->results, true),
-            $model->pid,
-            $model->committed_by,
-            CarbonImmutable::createFromTimestampMs($model->committed_at),
-            $model->started_at ? CarbonImmutable::createFromTimestampMs($model->started_at) : null,
-            $model->finished_at ? CarbonImmutable::createFromTimestampMs($model->finished_at) : null
-        );
-    }
-
-    /**
-     * Determine if process can be marked as finished.
-     *
-     * @return bool
+     * @inheritDoc
      */
     public function qualifyAsFinished(): bool
     {
@@ -341,9 +392,7 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
     }
 
     /**
-     * Determine if process can be started.
-     *
-     * @return bool
+     * @inheritDoc
      */
     public function qualifyToStart(): bool
     {
@@ -359,6 +408,14 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
         }
 
         return $aggregated === count($this->results);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function related(): array
+    {
+        return $this->related;
     }
 
     /**
@@ -398,7 +455,7 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
             );
         }
 
-        $this->status = ProcessContract::Pending;
+        $this->status    = ProcessContract::Pending;
         $this->startedAt = CarbonImmutable::now();
 
         return (int)$this->startedAt->valueOf();
@@ -429,6 +486,8 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
             'status'      => $this->status,
             'handlers'    => $this->handlers,
             'results'     => $this->results,
+            'related'     => $this->related,
+            'data'        => $this->data,
             'pid'         => $this->pid,
             'committedBy' => $this->committedBy,
             'committedAt' => $this->committedAt->getPreciseTimestamp(3),

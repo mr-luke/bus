@@ -8,7 +8,8 @@ namespace Mrluke\Bus\Contracts;
  * Interface ProcessRepository
  *
  * @author  Łukasz Sitnicki <lukasz.sitnicki@movecloser.pl>
- * @version 1.0.0
+ * @author  Krzysztof Ustowski <krzysztof.ustowski@movecloser.pl>
+ * @version 1.1.0
  * @licence MIT
  * @link    https://github.com/mr-luke/bus
  * @package Mrluke\Bus\Contracts
@@ -18,10 +19,10 @@ interface ProcessRepository
     /**
      * Apply sub-result to process.
      *
-     * @param \Mrluke\Bus\Contracts\Process|string $processId
-     * @param string                               $handler
-     * @param string                               $status
-     * @param string|null                          $feedback
+     * @param \Mrluke\Bus\Contracts\Process|string     $processId
+     * @param string                                   $handler
+     * @param string                                   $status
+     * @param \Mrluke\Bus\Contracts\HandlerResult      $result
      * @return \Mrluke\Bus\Contracts\Process
      * @throws \Mrluke\Bus\Exceptions\MissingHandler
      * @throws \Mrluke\Bus\Exceptions\MissingProcess
@@ -31,7 +32,7 @@ interface ProcessRepository
         $processId,
         string $handler,
         string $status,
-        string $feedback = null
+        HandlerResult $result
     ): Process;
 
     /**

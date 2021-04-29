@@ -10,18 +10,19 @@ use Illuminate\Database\Connection;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
-use Mrluke\Configuration\Contracts\ArrayHost;
-
+use Mrluke\Bus\Contracts\HandlerResult;
 use Mrluke\Bus\Contracts\Process;
 use Mrluke\Bus\Contracts\ProcessRepository;
 use Mrluke\Bus\Exceptions\InvalidAction;
 use Mrluke\Bus\Exceptions\MissingProcess;
+use Mrluke\Configuration\Contracts\ArrayHost;
 
 /**
  * Database implementation of ProcessRepository
  *
  * @author  Łukasz Sitnicki <lukasz.sitnicki@movecloser.pl>
- * @version 1.0.0
+ * @author  Krzysztof Ustowski <krzysztof.ustowski@movecloser.pl>
+ * @version 1.1.0
  * @licence MIT
  * @link    https://github.com/mr-luke/bus
  * @package Mrluke\Bus
@@ -66,17 +67,19 @@ class DatabaseProcessRepository implements ProcessRepository
         $processId,
         string $handler,
         string $status,
-        string $feedback = null
+        HandlerResult $result
     ): Process {
         $this->validateIdentifier($processId);
         $process = is_string($processId) ? $this->find($processId) : $processId;
 
-        $this->getBuilder()->where('id', $process->id())->update(
-            [
-                'results' => $process->applyResult($handler, $status, $feedback),
-                'status'  => $process->status()
-            ]
-        );
+        $payload = [
+            'results' => $process->applyResult($handler, $status, $result->getFeedback()),
+            'related' => $process->applyRelated($result->getRelated()),
+            'data'    => $process->applyData($result->getData()),
+            'status'  => $process->status()
+        ];
+
+        $this->getBuilder()->where('id', $process->id())->update($payload);
 
         return $process;
     }

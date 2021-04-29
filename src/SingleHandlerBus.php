@@ -28,6 +28,7 @@ use Mrluke\Bus\Exceptions\MissingHandler;
 use Mrluke\Bus\Extensions\ResolveDependencies;
 use Mrluke\Bus\Extensions\TranslateResults;
 
+
 /**
  * Abstract for single handler Bus.
  *
@@ -451,7 +452,7 @@ abstract class SingleHandlerBus implements Bus
                 $process,
                 get_class($handler),
                 Process::Failed,
-                $e->getMessage()
+                $this->processResult($e->getMessage())
             );
 
             if ($this->stopOnException) {
