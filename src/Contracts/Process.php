@@ -33,25 +33,25 @@ interface Process
     /**
      * Apply handler data object to process.
      *
-     * @param \Serializable $data
-     * @return array
+     * @param mixed|null $data
+     * @return array|null
      */
-    public function applyData(\Serializable $data): array;
+    public function applyData($data): ?array;
 
     /**
      * Apply related processes to process.
      *
-     * @param array $related
-     * @return array
+     * @param array|null $related
+     * @return array|null
      */
-    public function applyRelated(array $related): array;
+    public function applyRelated(?array $related): ?array;
 
     /**
      * Apply result for given handler.
      *
      * @param string $handler
      * @param string $status
-     * @param string $feedback
+     * @param string|null $feedback
      * @return array
      * @throws \Mrluke\Bus\Exceptions\InvalidAction
      * @throws \Mrluke\Bus\Exceptions\MissingHandler
@@ -59,7 +59,7 @@ interface Process
     public function applyResult(
         string $handler,
         string $status,
-        string $feedback
+        ?string $feedback = null
     ): array;
 
     /**
@@ -141,9 +141,16 @@ interface Process
     /**
      * Return list of related Processes.
      *
-     * @return array
+     * @return array|null
      */
-    public function related(): array;
+    public function related(): ?array;
+
+    /**
+     * Return list of data from handlers.
+     *
+     * @return array|null
+     */
+    public function data(): ?array;
 
     /**
      * Return result of given process.

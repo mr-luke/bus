@@ -16,21 +16,21 @@ interface HandlerResult
     /**
      * An array of related processes.
      *
-     * @return array
+     * @return array | null
      */
-    public function getRelated(): array;
+    public function getRelated(): ?array;
 
     /**
      * Complex object or data returned by handler.
      *
-     * @return mixed
+     * @return mixed | null
      */
     public function getData();
 
     /**
      * Simpler string message returned by handler.
      *
-     * @return string
+     * @return string | null
      */
-    public function getFeedback(): string;
+    public function getFeedback(): ?string;
 }

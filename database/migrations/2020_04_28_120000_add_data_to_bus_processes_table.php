@@ -1,9 +1,8 @@
 <?php
 
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
-
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 use Mrluke\Bus\Contracts\Config;
 
 /**
@@ -39,8 +38,8 @@ class AddDataToBusProcessesTable extends Migration
     public function up()
     {
         Schema::table($this->config->get('table'), function (Blueprint $table) {
-            $table->json('data')->nullable()->after('data');
-            $table->json('related')->nullable()->after('results');
+            $table->json('data')->nullable()->after('results');
+            $table->json('related')->nullable()->after('data');
         });
     }
 

@@ -31,24 +31,16 @@ trait TranslateResults
 
         if (is_array($mixedResults)) {
             return new \Mrluke\Bus\HandlerResult(
-                json_encode($mixedResults),
-                null,
-                null
+                json_encode($mixedResults)
             );
         }
 
         if (is_bool($mixedResults) || is_numeric($mixedResults) || is_string($mixedResults)) {
             return new \Mrluke\Bus\HandlerResult(
-                (string)$mixedResults,
-                null,
-                null
+                (string)$mixedResults
             );
         }
 
-        return new \Mrluke\Bus\HandlerResult(
-            '',
-            null,
-            null
-        );
+        return new \Mrluke\Bus\HandlerResult();
     }
 }

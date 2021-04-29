@@ -53,6 +53,8 @@ class ProcessTest extends TestCase
             ['Handler'],
             null,
             null,
+            null,
+            null,
             $this->buildCarbonMock()
         );
 
@@ -76,6 +78,8 @@ class ProcessTest extends TestCase
             ProcessContract::New,
             1,
             ['Handler'],
+            null,
+            null,
             123,
             null,
             $carbon
@@ -89,6 +93,8 @@ class ProcessTest extends TestCase
                 'status'      => ProcessContract::New,
                 'handlers'    => 1,
                 'results'     => ['Handler'],
+                'related'     => null,
+                'data'        => null,
                 'pid'         => 123,
                 'committedBy' => null,
                 'committedAt' => 1234567890,
@@ -109,6 +115,8 @@ class ProcessTest extends TestCase
             ProcessContract::New,
             1,
             [$handlerName => ['status' => ProcessContract::New]],
+            null,
+            null,
             null,
             null,
             $this->buildCarbonMock()
@@ -134,6 +142,8 @@ class ProcessTest extends TestCase
             [$handlerName => ['status' => ProcessContract::New]],
             null,
             null,
+            null,
+            null,
             $this->buildCarbonMock()
         );
 
@@ -149,6 +159,8 @@ class ProcessTest extends TestCase
             ProcessContract::New,
             1,
             ['Handler' => ['status' => ProcessContract::New]],
+            null,
+            null,
             null,
             null,
             $this->buildCarbonMock()
@@ -172,6 +184,8 @@ class ProcessTest extends TestCase
             ProcessContract::Finished,
             count($results),
             $results,
+            null,
+            null,
             null,
             null,
             $carbon,
@@ -199,6 +213,8 @@ class ProcessTest extends TestCase
             $results,
             null,
             null,
+            null,
+            null,
             $carbon,
             $carbon,
             $carbon
@@ -222,6 +238,8 @@ class ProcessTest extends TestCase
             ProcessContract::Pending,
             count($results),
             $results,
+            null,
+            null,
             null,
             null,
             $carbon
@@ -248,6 +266,8 @@ class ProcessTest extends TestCase
             $results,
             null,
             null,
+            null,
+            null,
             $carbon
         );
 
@@ -270,6 +290,8 @@ class ProcessTest extends TestCase
             ProcessContract::Canceled,
             count($results),
             $results,
+            null,
+            null,
             null,
             null,
             $carbon
@@ -296,6 +318,8 @@ class ProcessTest extends TestCase
             $results,
             null,
             null,
+            null,
+            null,
             $carbon
         );
 
@@ -318,6 +342,8 @@ class ProcessTest extends TestCase
             ProcessContract::New,
             count($results),
             $results,
+            null,
+            null,
             null,
             null,
             $carbon
@@ -344,6 +370,8 @@ class ProcessTest extends TestCase
             $results,
             null,
             null,
+            null,
+            null,
             $carbon
         );
 
@@ -366,6 +394,8 @@ class ProcessTest extends TestCase
             ProcessContract::New,
             count($results),
             $results,
+            null,
+            null,
             null,
             null,
             $carbon

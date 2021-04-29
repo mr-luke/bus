@@ -19,29 +19,32 @@ class HandlerResult implements Contract
 {
 
     /**
-     * @var array
+     * @var array|null
      */
-    protected array $related;
+    protected ?array $related;
 
     /**
-     * @var mixed
+     * @var mixed|null
      */
     protected $data;
 
     /**
-     * @var string
+     * @var string|null
      */
-    protected string $feedback;
+    protected ?string $feedback;
 
     /**
      * HandlerResult constructor.
      *
-     * @param string        $feedback
-     * @param \Serializable $data
-     * @param array         $related
+     * @param string|null    $feedback
+     * @param mixed|null $data
+     * @param array|null     $related
      */
-    public function __construct(string $feedback, \Serializable $data, array $related = [])
-    {
+    public function __construct(
+        ?string $feedback = null,
+        $data = null,
+        ?array $related = null
+    ) {
         $this->data     = $data;
         $this->related  = $related;
         $this->feedback = $feedback;
@@ -58,16 +61,16 @@ class HandlerResult implements Contract
     /**
      * @inheritDoc
      */
-    public function getRelated(): array
+    public function getFeedback(): ?string
     {
-        return $this->related;
+        return $this->feedback;
     }
 
     /**
      * @inheritDoc
      */
-    public function getFeedback(): string
+    public function getRelated(): ?array
     {
-        return $this->feedback;
+        return $this->related;
     }
 }

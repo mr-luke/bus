@@ -6,6 +6,7 @@ use Exception;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Query\Builder;
+use Mrluke\Bus\HandlerResult;
 use Mrluke\Configuration\Contracts\ArrayHost;
 use PHPUnit\Framework\TestCase;
 
@@ -89,7 +90,7 @@ class DatabaseProcessRepositoryTest extends TestCase
             self::ExistingId,
             ProcessTest::HandlerName,
             Process::Succeed,
-            $feedback
+            new HandlerResult($feedback)
         );
 
         $this->assertEquals(

@@ -55,9 +55,9 @@ class DatabaseProcessRepository implements ProcessRepository
      */
     public function __construct(ArrayHost $config, Connection $connection, Guard $guard)
     {
-        $this->config = $config;
+        $this->config     = $config;
         $this->connection = $connection;
-        $this->guard = $guard;
+        $this->guard      = $guard;
     }
 
     /**
@@ -78,6 +78,18 @@ class DatabaseProcessRepository implements ProcessRepository
             'data'    => $process->applyData($result->getData()),
             'status'  => $process->status()
         ];
+
+        if (!is_null($payload['data'])) {
+            $payload['data'] = array_filter($payload['data'], function($item) {
+                return serialize($item);
+            });
+        }
+
+        foreach ($payload as $k => $v) {
+            if (in_array($k, ['results', 'data', 'related']) && !is_null($payload[$k])) {
+                $payload[$k] = json_encode($payload[$k]);
+            }
+        }
 
         $this->getBuilder()->where('id', $process->id())->update($payload);
 
@@ -142,10 +154,11 @@ class DatabaseProcessRepository implements ProcessRepository
         foreach ($process->toArray() as $k => $v) {
             $payload[Str::snake($k)] = $v;
 
-            if ($k == 'results') {
+            if (in_array($k, ['results', 'data', 'related']) && !is_null($payload[$k])) {
                 $payload[$k] = json_encode($payload[$k]);
             }
         }
+
 
         if (!$this->getBuilder()->insert($payload)) {
             throw new Exception('Creating new process failed.');

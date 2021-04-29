@@ -84,16 +84,16 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
     /**
      * List of related processes
      *
-     * @var array
+     * @var array|null
      */
-    private array $related;
+    private ?array $related;
 
     /**
      * List of serialized HanderResult data
      *
-     * @var array
+     * @var array|null
      */
-    private array $data;
+    private ?array $data;
 
     /**
      * @param string                       $id
@@ -102,8 +102,8 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
      * @param string                       $status
      * @param int                          $handlers
      * @param array                        $results
-     * @param array                        $related
-     * @param array                        $data
+     * @param array|null                   $related
+     * @param array|null                   $data
      * @param int|null                     $pid
      * @param string|int|null              $committedBy
      * @param \Carbon\CarbonImmutable      $committedAt
@@ -118,8 +118,8 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
         string $status,
         int $handlers,
         array $results,
-        array $related,
-        array $data,
+        ?array $related,
+        ?array $data,
         ?int $pid,
         $committedBy,
         CarbonImmutable $committedAt,
@@ -144,27 +144,42 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
     /**
      * Apply handler data object to process.
      *
-     * @param \Serializable $data
-     * @return array
+     * @param mixed|null $data
+     * @return array|null
      */
-    public function applyData(\Serializable $data): array
+    public function applyData($data): ?array
     {
-        $this->data = array_merge($this->data, [$data]);
+        if (is_null($data)) {
+            return $this->data;
+        }
 
-        return array_merge($this->data, [serialize($data)]);
+        if (is_null($this->data)) {
+            $this->data = [$data];
+        } else {
+            $this->data = array_merge($this->data, [$data]);
+        }
+        return $this->data;
     }
 
     /**
      * Apply result for given handler.
      *
-     * @param array $related
-     * @return array
+     * @param array|null $related
+     * @return array|null
      */
-    public function applyRelated(array $related): array
+    public function applyRelated(?array $related): ?array
     {
-        $this->related = array_merge($this->related, $related);
+        if (is_null($related)) {
+            return $this->related;
+        }
 
-        return $this->results;
+        if (is_null($this->related)) {
+            $this->related = $related;
+        } else {
+            $this->related = array_merge($this->related, $related);
+        }
+
+        return $this->related;
     }
 
     /**
@@ -180,7 +195,7 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
     public function applyResult(
         string $handler,
         string $status,
-        string $feedback
+        ?string $feedback = null
     ): array {
         $status = self::verifySubStatus($status);
 
@@ -192,7 +207,7 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
 
         $this->results[$handler] = array_merge(
             ['status' => $status],
-            $feedback !== '' ? ['feedback' => $feedback] : []
+            $feedback ? ['feedback' => $feedback] : []
         );
 
         return $this->results;
@@ -248,10 +263,20 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
             ProcessContract::New,
             count($handlers),
             $results,
+            null,
+            null,
             $pid,
             $auth,
             CarbonImmutable::now()
         );
+    }
+
+    /**
+     * @return array|null
+     */
+    public function data(): ?array
+    {
+        return $this->data;
     }
 
     /**
@@ -293,6 +318,20 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
             }
         }
 
+        $model->related = !is_null($model->related) ?
+            json_decode($model->related, true) : $model->related;
+
+        $model->data = !is_null($model->data) ?
+            json_decode($model->data, true) : $model->data;
+
+        $model->data = is_array($model->data) ?
+            array_filter(
+                $model->data,
+                function($item) {
+                    return unserialize($item);
+                }
+            ) : $model->data;
+
         return new self(
             $model->id,
             $model->bus,
@@ -301,12 +340,7 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
             (int)$model->handlers,
             json_decode($model->results, true),
             $model->related,
-            array_filter(
-                $model->data,
-                function($item) {
-                    return unserialize($item);
-                }
-            ),
+            $model->data,
             $model->pid,
             $model->committed_by,
             CarbonImmutable::createFromTimestampMs($model->committed_at),
