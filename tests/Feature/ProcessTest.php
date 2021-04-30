@@ -34,6 +34,8 @@ class ProcessTest extends TestCase
             $results,
             null,
             null,
+            null,
+            null,
             $carbon
         );
 
@@ -80,6 +82,8 @@ class ProcessTest extends TestCase
                 'results'     => [
                     'Handler' => ['status' => ProcessContract::New]
                 ],
+                'related'     => null,
+                'data'        => null,
                 'committedBy' => null,
                 'startedAt'   => null,
                 'finishedAt'  => null
@@ -108,6 +112,8 @@ class ProcessTest extends TestCase
             $results,
             null,
             null,
+            null,
+            null,
             $carbon
         );
 
@@ -130,6 +136,8 @@ class ProcessTest extends TestCase
             ProcessContract::Pending,
             count($results),
             $results,
+            null,
+            null,
             null,
             null,
             $carbon
@@ -155,6 +163,8 @@ class ProcessTest extends TestCase
         $model->status = ProcessContract::New;
         $model->handlers = 1;
         $model->results = '{"Handler":{"status":"' . ProcessContract::New . '"}}';
+        $model->data = null;
+        $model->related = null;
         $model->pid = 123;
         $model->committed_by = 1;
         $model->committed_at = 1607857526;
@@ -184,6 +194,8 @@ class ProcessTest extends TestCase
                 'results'     => [
                     self::HandlerName => ['status' => ProcessContract::Pending]
                 ],
+                'related'     => null,
+                'data'        => null,
                 'pid'         => 12345,
                 'committedBy' => 1,
                 'committedAt' => 1607857526000,
@@ -214,6 +226,8 @@ class ProcessTest extends TestCase
             $results,
             null,
             null,
+            null,
+            null,
             $carbon
         );
 
@@ -236,6 +250,8 @@ class ProcessTest extends TestCase
             ProcessContract::New,
             count($results),
             $results,
+            null,
+            null,
             null,
             null,
             $carbon
@@ -268,6 +284,8 @@ class ProcessTest extends TestCase
         $model->status = $status;
         $model->handlers = 1;
         $model->results = '{"' . self::HandlerName . '":{"status":"' . $status . '"}}';
+        $model->related = null;
+        $model->data = null;
         $model->pid = 12345;
         $model->committed_by = 1;
         $model->committed_at = 1607857526000;

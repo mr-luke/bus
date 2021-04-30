@@ -9,14 +9,14 @@ use Illuminate\Contracts\Queue\Factory;
 use Illuminate\Log\Logger;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use RuntimeException;
-
 use Mrluke\Bus\AsyncHandlerJob;
 use Mrluke\Bus\Contracts\CommandBus;
 use Mrluke\Bus\Contracts\Config;
 use Mrluke\Bus\Contracts\Process;
 use Mrluke\Bus\Contracts\ProcessRepository;
 use Mrluke\Bus\Exceptions\MissingConfiguration;
+use Mrluke\Bus\HandlerResult;
+use RuntimeException;
 use Tests\AppCase;
 use Tests\Components\AsyncHelloCommand;
 use Tests\Components\DependencyErrorHandler;
@@ -106,7 +106,12 @@ class LogicFlowTest extends AppCase
                 ->exists()
         );
 
-        $process = $repository->applySubResult($id, HelloHandler::class, Process::Succeed);
+        $process = $repository->applySubResult(
+            $id,
+            HelloHandler::class,
+            Process::Succeed,
+            new HandlerResult()
+        );
 
         $this->assertEquals(
             [HelloHandler::class => ['status' => Process::Succeed]],

@@ -114,7 +114,7 @@ class AsyncHandlerJob implements ShouldQueue
                 $process,
                 $this->handlerClass,
                 ProcessContract::Failed,
-                $e->getMessage()
+                new HandlerResult($e->getMessage())
             );
         }
 

@@ -10,7 +10,8 @@ use stdClass;
  * Process data model.
  *
  * @author  Łukasz Sitnicki <lukasz.sitnicki@gmail.com>
- * @version 1.0.0
+ * @author  Krzysztof Ustowski <krzysztof.ustowski@movecloser.pl>
+ * @version 1.1.0
  * @licence MIT
  * @link     https://github.com/mr-luke/bus
  * @package Mrluke\Bus\Contracts
@@ -21,19 +22,35 @@ interface Process
 
     const Finished = 'finished';
 
-    const Failed = 'failed';
+    const Failed   = 'failed';
 
-    const New = 'new';
+    const New      = 'new';
 
-    const Pending = 'pending';
+    const Pending  = 'pending';
 
-    const Succeed = 'succeed';
+    const Succeed  = 'succeed';
+
+    /**
+     * Apply handler data object to process.
+     *
+     * @param mixed|null $data
+     * @return array|null
+     */
+    public function applyData($data): ?array;
+
+    /**
+     * Apply related processes to process.
+     *
+     * @param array|null $related
+     * @return array|null
+     */
+    public function applyRelated(?array $related): ?array;
 
     /**
      * Apply result for given handler.
      *
-     * @param string      $handler
-     * @param string      $status
+     * @param string $handler
+     * @param string $status
      * @param string|null $feedback
      * @return array
      * @throws \Mrluke\Bus\Exceptions\InvalidAction
@@ -70,6 +87,23 @@ interface Process
     ): Process;
 
     /**
+     * Mark process as finished.
+     *
+     * @return int
+     * @throws \Mrluke\Bus\Exceptions\InvalidAction
+     */
+    public function finish(): int;
+
+    /**
+     * Create instance from database model.
+     *
+     * @param \stdClass $model
+     * @return \Mrluke\Bus\Contracts\Process
+     * @throws \Mrluke\Bus\Exceptions\InvalidAction
+     */
+    public static function fromDatabase(stdClass $model): Process;
+
+    /**
      * Return id of process.
      *
      * @return string
@@ -91,23 +125,6 @@ interface Process
     public function isPending(): bool;
 
     /**
-     * Mark process as finished.
-     *
-     * @return int
-     * @throws \Mrluke\Bus\Exceptions\InvalidAction
-     */
-    public function finish(): int;
-
-    /**
-     * Create instance from database model.
-     *
-     * @param \stdClass $model
-     * @return \Mrluke\Bus\Contracts\Process
-     * @throws \Mrluke\Bus\Exceptions\InvalidAction
-     */
-    public static function fromDatabase(stdClass $model): Process;
-
-    /**
      * Determine if process can be marked as finished.
      *
      * @return bool
@@ -120,6 +137,20 @@ interface Process
      * @return bool
      */
     public function qualifyToStart(): bool;
+
+    /**
+     * Return list of related Processes.
+     *
+     * @return array|null
+     */
+    public function related(): ?array;
+
+    /**
+     * Return list of data from handlers.
+     *
+     * @return array|null
+     */
+    public function data(): ?array;
 
     /**
      * Return result of given process.
