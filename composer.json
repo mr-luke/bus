@@ -42,5 +42,10 @@
     }
   },
   "minimum-stability": "stable",
-  "prefer-stable": true
+  "prefer-stable": true,
+  "scripts": {
+    "post-update-cmd": [
+      "@php artisan migrate  --ansi"
+    ]
+  }
 }
