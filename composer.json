@@ -44,7 +44,7 @@
   "minimum-stability": "stable",
   "prefer-stable": true,
   "scripts": {
-    "post-update-cmd": [
+    "post-package-update": [
       "@php artisan migrate  --ansi"
     ]
   }
