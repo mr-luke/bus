@@ -447,7 +447,7 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
     /**
      * @inheritDoc
      */
-    public function related(): array
+    public function related(): ?array
     {
         return $this->related;
     }
