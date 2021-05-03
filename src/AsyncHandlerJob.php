@@ -10,7 +10,6 @@ use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Log\Logger;
 use Illuminate\Queue\InteractsWithQueue;
-
 use Mrluke\Bus\Contracts\Instruction;
 use Mrluke\Bus\Contracts\Process as ProcessContract;
 use Mrluke\Bus\Contracts\ProcessRepository;
@@ -20,6 +19,13 @@ use Mrluke\Bus\Extensions\TranslateResults;
 class AsyncHandlerJob implements ShouldQueue
 {
     use InteractsWithQueue, Queueable, ResolveDependencies, TranslateResults;
+
+    /**
+     * Timout for processs (in seconds)
+     *
+     * @var int
+     */
+    public int $timeout;
 
     /** Determine if process should be delete on success.
      *
@@ -60,9 +66,9 @@ class AsyncHandlerJob implements ShouldQueue
         bool $cleanOnSuccess
     ) {
         $this->cleanOnSuccess = $cleanOnSuccess;
-        $this->instruction = $instruction;
-        $this->handlerClass = $handlerClass;
-        $this->processId = $processId;
+        $this->instruction    = $instruction;
+        $this->handlerClass   = $handlerClass;
+        $this->processId      = $processId;
     }
 
     /**
@@ -123,5 +129,13 @@ class AsyncHandlerJob implements ShouldQueue
 
             $logger->debug('Process finished.', ['process' => $this->processId]);
         }
+    }
+
+    /**
+     * @param $timeout
+     */
+    public function timeout($timeout)
+    {
+        $this->timeout = $timeout;
     }
 }

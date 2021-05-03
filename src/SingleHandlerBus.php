@@ -116,120 +116,9 @@ abstract class SingleHandlerBus implements Bus
 
         $this->processRepository = $repository;
 
-        $this->container = $container;
+        $this->container     = $container;
         $this->queueResolver = $queueResolver;
-        $this->logger = $logger;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function dispatch(Instruction $instruction, Trigger $trigger = null): ?Process
-    {
-        if (is_null($trigger)) {
-            if (!$instruction instanceof Trigger) {
-                throw new MissingConfiguration(
-                    sprintf(
-                        'An instruction [%s] must implements [%s] contract to trigger handlers.',
-                        get_class($instruction),
-                        Trigger::class
-                    )
-                );
-            }
-
-            $trigger = $instruction;
-        }
-
-        if (!$this->hasHandler($trigger)) {
-            if (!$this->throwWhenNoHandler) {
-                return null;
-            }
-
-            $this->throwOnMissingHandler($trigger);
-        }
-
-        $handlers = $this->handler($trigger);
-        $process = $this->createProcess($instruction, $handlers);
-
-        $this->processHandlersStack(
-            $instruction,
-            $process,
-            $handlers,
-            $instruction instanceof ShouldBeAsync || $this instanceof AsyncBus
-        );
-
-        return $process;
-    }
-
-    /**
-     * @inheritDoc
-     * @codeCoverageIgnore
-     */
-    public function dispatchMultiple(Trigger $trigger, array $instructions): array
-    {
-        $processes = [];
-
-        foreach ($instructions as $i) {
-            $processes[] = $this->dispatch($i, $trigger);
-        }
-
-        return $processes;
-    }
-
-    /**
-     * @inheritDoc
-     * @codeCoverageIgnore
-     */
-    public function hasHandler(Trigger $trigger): bool
-    {
-        return array_key_exists(get_class($trigger), $this->handlers);
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function handler(Trigger $trigger): array
-    {
-        if (!$this->hasHandler($trigger)) {
-            throw new MissingHandler(
-                sprintf('Given trigger [%s] is not registered.', get_class($trigger))
-            );
-        }
-
-        $handler = $this->handlers[get_class($trigger)];
-
-        if (is_array($handler)) {
-            throw new InvalidHandler(
-                sprintf(
-                    'Invalid handler for [%s]. Single Handler required.',
-                    get_class($trigger)
-                )
-            );
-        }
-
-        $reflection = new ReflectionClass($handler);
-
-        if (
-            !$reflection->isInstantiable() ||
-            !$reflection->implementsInterface(Handler::class)
-        ) {
-            throw new InvalidHandler(
-                sprintf('Handler must be an instance of %s', Handler::class)
-            );
-        }
-
-        return [$handler];
-    }
-
-    /**
-     * @inheritDoc
-     * @codeCoverageIgnore
-     */
-    public function map(array $map): Bus
-    {
-        $this->handlers = array_merge($this->handlers, $map);
-
-        return $this;
+        $this->logger        = $logger;
     }
 
     /**
@@ -254,6 +143,18 @@ abstract class SingleHandlerBus implements Bus
     {
         /* @var HasAsyncProcesses $this */
         return property_exists($instruction, 'queue') ? $instruction->queue : $this->onQueue();
+    }
+
+    /**
+     * Return timeout.
+     *
+     * @param \Mrluke\Bus\Contracts\Instruction $instruction
+     * @return int|null
+     */
+    protected function considerTimeout(Instruction $instruction): ?int
+    {
+        /* @var HasAsyncProcesses $this */
+        return property_exists($instruction, 'timeout') ? $instruction->timeout : null;
     }
 
     /**
@@ -347,8 +248,9 @@ abstract class SingleHandlerBus implements Bus
         $queue = call_user_func($this->queueResolver, $this->onQueue());
         $this->verifyQueueInstance($queue);
 
-        $delay = $this->considerDelay($instruction);
+        $delay     = $this->considerDelay($instruction);
         $queueName = $this->considerQueue($instruction);
+        $timeout   = $this->considerTimeout($instruction);
 
         $job = new AsyncHandlerJob($id, $instruction, $handlerClass, $cleanOnSuccess);
         if ($queueName) {
@@ -357,6 +259,10 @@ abstract class SingleHandlerBus implements Bus
 
         if ($delay) {
             $job->delay($delay);
+        }
+
+        if ($timeout) {
+            $job->timeout($timeout);
         }
 
         $queue->push($job);
