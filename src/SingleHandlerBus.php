@@ -381,6 +381,117 @@ abstract class SingleHandlerBus implements Bus
     }
 
     /**
+     * @inheritDoc
+     */
+    public function dispatch(Instruction $instruction, Trigger $trigger = null): ?Process
+    {
+        if (is_null($trigger)) {
+            if (!$instruction instanceof Trigger) {
+                throw new MissingConfiguration(
+                    sprintf(
+                        'An instruction [%s] must implements [%s] contract to trigger handlers.',
+                        get_class($instruction),
+                        Trigger::class
+                    )
+                );
+            }
+
+            $trigger = $instruction;
+        }
+
+        if (!$this->hasHandler($trigger)) {
+            if (!$this->throwWhenNoHandler) {
+                return null;
+            }
+
+            $this->throwOnMissingHandler($trigger);
+        }
+
+        $handlers = $this->handler($trigger);
+        $process  = $this->createProcess($instruction, $handlers);
+
+        $this->processHandlersStack(
+            $instruction,
+            $process,
+            $handlers,
+            $instruction instanceof ShouldBeAsync || $this instanceof AsyncBus
+        );
+
+        return $process;
+    }
+
+    /**
+     * @inheritDoc
+     * @codeCoverageIgnore
+     */
+    public function dispatchMultiple(Trigger $trigger, array $instructions): array
+    {
+        $processes = [];
+
+        foreach ($instructions as $i) {
+            $processes[] = $this->dispatch($i, $trigger);
+        }
+
+        return $processes;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function handler(Trigger $trigger): array
+    {
+        if (!$this->hasHandler($trigger)) {
+            throw new MissingHandler(
+                sprintf('Given trigger [%s] is not registered.', get_class($trigger))
+            );
+        }
+
+        $handler = $this->handlers[get_class($trigger)];
+
+        if (is_array($handler)) {
+            throw new InvalidHandler(
+                sprintf(
+                    'Invalid handler for [%s]. Single Handler required.',
+                    get_class($trigger)
+                )
+            );
+        }
+
+        $reflection = new ReflectionClass($handler);
+
+        if (
+            !$reflection->isInstantiable() ||
+            !$reflection->implementsInterface(Handler::class)
+        ) {
+            throw new InvalidHandler(
+                sprintf('Handler must be an instance of %s', Handler::class)
+            );
+        }
+
+        return [$handler];
+    }
+
+    /**
+     * @inheritDoc
+     * @codeCoverageIgnore
+     */
+    public function hasHandler(Trigger $trigger): bool
+    {
+        return array_key_exists(get_class($trigger), $this->handlers);
+    }
+
+    /**
+     * @inheritDoc
+     * @codeCoverageIgnore
+     */
+    public function map(array $map): Bus
+    {
+        $this->handlers = array_merge($this->handlers, $map);
+
+        return $this;
+    }
+
+    /**
      * Verify if given queue is proper instance.
      *
      * @param $queue
