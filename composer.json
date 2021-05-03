@@ -42,10 +42,5 @@
     }
   },
   "minimum-stability": "stable",
-  "prefer-stable": true,
-  "scripts": {
-    "post-package-update": [
-      "@php artisan migrate  --ansi"
-    ]
-  }
+  "prefer-stable": true
 }
