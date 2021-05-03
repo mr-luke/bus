@@ -21,6 +21,13 @@ class AsyncHandlerJob implements ShouldQueue
 {
     use InteractsWithQueue, Queueable, ResolveDependencies, TranslateResults;
 
+    /**
+     * Timout for processs (in seconds)
+     *
+     * @var int
+     */
+    public int $timeout;
+
     /** Determine if process should be delete on success.
      *
      * @var bool
@@ -60,9 +67,9 @@ class AsyncHandlerJob implements ShouldQueue
         bool $cleanOnSuccess
     ) {
         $this->cleanOnSuccess = $cleanOnSuccess;
-        $this->instruction = $instruction;
-        $this->handlerClass = $handlerClass;
-        $this->processId = $processId;
+        $this->instruction    = $instruction;
+        $this->handlerClass   = $handlerClass;
+        $this->processId      = $processId;
     }
 
     /**
@@ -123,5 +130,13 @@ class AsyncHandlerJob implements ShouldQueue
 
             $logger->debug('Process finished.', ['process' => $this->processId]);
         }
+    }
+
+    /**
+     * @param $timeout
+     */
+    public function timeout($timeout)
+    {
+        $this->timeout = $timeout;
     }
 }

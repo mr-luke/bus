@@ -116,9 +116,9 @@ abstract class SingleHandlerBus implements Bus
 
         $this->processRepository = $repository;
 
-        $this->container = $container;
+        $this->container     = $container;
         $this->queueResolver = $queueResolver;
-        $this->logger = $logger;
+        $this->logger        = $logger;
     }
 
     /**
@@ -149,7 +149,7 @@ abstract class SingleHandlerBus implements Bus
         }
 
         $handlers = $this->handler($trigger);
-        $process = $this->createProcess($instruction, $handlers);
+        $process  = $this->createProcess($instruction, $handlers);
 
         $this->processHandlersStack(
             $instruction,
@@ -174,15 +174,6 @@ abstract class SingleHandlerBus implements Bus
         }
 
         return $processes;
-    }
-
-    /**
-     * @inheritDoc
-     * @codeCoverageIgnore
-     */
-    public function hasHandler(Trigger $trigger): bool
-    {
-        return array_key_exists(get_class($trigger), $this->handlers);
     }
 
     /**
@@ -225,6 +216,15 @@ abstract class SingleHandlerBus implements Bus
      * @inheritDoc
      * @codeCoverageIgnore
      */
+    public function hasHandler(Trigger $trigger): bool
+    {
+        return array_key_exists(get_class($trigger), $this->handlers);
+    }
+
+    /**
+     * @inheritDoc
+     * @codeCoverageIgnore
+     */
     public function map(array $map): Bus
     {
         $this->handlers = array_merge($this->handlers, $map);
@@ -254,6 +254,18 @@ abstract class SingleHandlerBus implements Bus
     {
         /* @var HasAsyncProcesses $this */
         return property_exists($instruction, 'queue') ? $instruction->queue : $this->onQueue();
+    }
+
+    /**
+     * Return timeout.
+     *
+     * @param \Mrluke\Bus\Contracts\Instruction $instruction
+     * @return int|null
+     */
+    protected function considerTimeout(Instruction $instruction): ?int
+    {
+        /* @var HasAsyncProcesses $this */
+        return property_exists($instruction, 'timeout') ? $instruction->timeout : null;
     }
 
     /**
@@ -347,8 +359,9 @@ abstract class SingleHandlerBus implements Bus
         $queue = call_user_func($this->queueResolver, $this->onQueue());
         $this->verifyQueueInstance($queue);
 
-        $delay = $this->considerDelay($instruction);
+        $delay     = $this->considerDelay($instruction);
         $queueName = $this->considerQueue($instruction);
+        $timeout   = $this->considerTimeout($instruction);
 
         $job = new AsyncHandlerJob($id, $instruction, $handlerClass, $cleanOnSuccess);
         if ($queueName) {
@@ -357,6 +370,10 @@ abstract class SingleHandlerBus implements Bus
 
         if ($delay) {
             $job->delay($delay);
+        }
+
+        if ($timeout) {
+            $job->timeout($timeout);
         }
 
         $queue->push($job);
