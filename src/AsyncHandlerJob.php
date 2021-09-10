@@ -133,6 +133,26 @@ class AsyncHandlerJob implements ShouldQueue
     }
 
     /**
+     * @param  \Exception  $e
+     */
+    public function failed(Exception  $e)
+    {
+        $repository = app()->make(ProcessRepository::class);
+        $process    = $repository->find($this->processId);
+
+        $repository->applySubResult(
+            $process,
+            $this->handlerClass,
+            ProcessContract::Failed,
+            new HandlerResult('Process disrupted')
+        );
+
+        if ($process->qualifyAsFinished()) {
+            $repository->finish($process);
+        }
+    }
+
+    /**
      * @param $timeout
      */
     public function timeout($timeout)
