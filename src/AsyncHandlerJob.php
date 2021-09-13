@@ -134,8 +134,10 @@ class AsyncHandlerJob implements ShouldQueue
 
     /**
      * @param  \Exception  $e
+     *
+     * @throws \Illuminate\Contracts\Container\BindingResolutionException
      */
-    public function failed(Exception  $e)
+    public function failed(Exception $e)
     {
         $repository = app()->make(ProcessRepository::class);
         $process    = $repository->find($this->processId);
