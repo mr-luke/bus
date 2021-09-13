@@ -144,7 +144,7 @@ class AsyncHandlerJob implements ShouldQueue
             $process,
             $this->handlerClass,
             ProcessContract::Failed,
-            new HandlerResult('Process disrupted')
+            new HandlerResult(__('bus::messages.process-disrupted'))
         );
 
         if ($process->qualifyAsFinished()) {
