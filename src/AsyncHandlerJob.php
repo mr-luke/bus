@@ -133,6 +133,28 @@ class AsyncHandlerJob implements ShouldQueue
     }
 
     /**
+     * @param  \Exception  $e
+     *
+     * @throws \Illuminate\Contracts\Container\BindingResolutionException
+     */
+    public function failed(Exception $e)
+    {
+        $repository = app()->make(ProcessRepository::class);
+        $process    = $repository->find($this->processId);
+
+        $repository->applySubResult(
+            $process,
+            $this->handlerClass,
+            ProcessContract::Failed,
+            new HandlerResult(__('bus::messages.process-disrupted'))
+        );
+
+        if ($process->qualifyAsFinished()) {
+            $repository->finish($process);
+        }
+    }
+
+    /**
      * @param $timeout
      */
     public function timeout($timeout)

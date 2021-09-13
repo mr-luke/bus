@@ -41,6 +41,12 @@ final class BusServiceProvider extends ServiceProvider
             [__DIR__ .'/../database/migrations/' => database_path('migrations')],
             'migrations'
         );
+
+        $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'bus');
+
+        $this->publishes([
+            __DIR__.'/../resources/lang' => resource_path('lang/vendor/bus'),
+        ]);
     }
 
     /**
