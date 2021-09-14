@@ -364,19 +364,16 @@ abstract class SingleHandlerBus implements Bus
         $timeout   = $this->considerTimeout($instruction);
 
         $job = new AsyncHandlerJob($id, $instruction, $handlerClass, $cleanOnSuccess);
-        if ($queueName) {
-            $job->onQueue($queueName);
-        }
-
-        if ($delay) {
-            $job->delay($delay);
-        }
 
         if ($timeout) {
             $job->timeout($timeout);
         }
 
-        $queue->push($job);
+        if ($delay) {
+            $queue->later($delay, $job, '', $queueName);
+        } else {
+            $queue->push($job, '', $queueName);
+        }
     }
 
     /**
