@@ -10,8 +10,6 @@ use Exception;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\Queue\Queue;
 use Illuminate\Log\Logger;
-use ReflectionClass;
-
 use Mrluke\Bus\Contracts\AsyncBus;
 use Mrluke\Bus\Contracts\Bus;
 use Mrluke\Bus\Contracts\ForceSync;
@@ -27,7 +25,7 @@ use Mrluke\Bus\Exceptions\MissingConfiguration;
 use Mrluke\Bus\Exceptions\MissingHandler;
 use Mrluke\Bus\Extensions\ResolveDependencies;
 use Mrluke\Bus\Extensions\TranslateResults;
-
+use ReflectionClass;
 
 /**
  * Abstract for single handler Bus.
@@ -364,19 +362,16 @@ abstract class SingleHandlerBus implements Bus
         $timeout   = $this->considerTimeout($instruction);
 
         $job = new AsyncHandlerJob($id, $instruction, $handlerClass, $cleanOnSuccess);
-        if ($queueName) {
-            $job->onQueue($queueName);
-        }
-
-        if ($delay) {
-            $job->delay($delay);
-        }
 
         if ($timeout) {
             $job->timeout($timeout);
         }
 
-        $queue->push($job);
+        if ($delay) {
+            $queue->later($delay, $job, '', $queueName);
+        } else {
+            $queue->push($job, '', $queueName);
+        }
     }
 
     /**
