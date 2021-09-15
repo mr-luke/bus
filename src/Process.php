@@ -325,11 +325,11 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
             json_decode($model->data, true) : $model->data;
 
         $model->data = is_array($model->data) ?
-            array_filter(
-                $model->data,
+            array_map(
                 function($item) {
-                    return unserialize($item);
-                }
+                    return is_array($item) ? $item : unserialize($item);
+                },
+                $model->data
             ) : $model->data;
 
         return new self(
