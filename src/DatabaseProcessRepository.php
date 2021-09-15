@@ -80,7 +80,9 @@ class DatabaseProcessRepository implements ProcessRepository
         ];
 
         if (!is_null($payload['data'])) {
-            $payload['data'] = serialize($payload['data']);
+            $payload['data'] = array_map(function($item) {
+                return serialize($item);
+            },$payload['data']);
         }
 
         foreach ($payload as $k => $v) {
