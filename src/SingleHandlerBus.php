@@ -356,23 +356,28 @@ abstract class SingleHandlerBus implements Bus
             );
         }
 
-        $queue = call_user_func($this->queueResolver, $this->onQueue());
-        $this->verifyQueueInstance($queue);
+        try {
+            $queue = call_user_func($this->queueResolver, $this->onQueue());
+            $this->verifyQueueInstance($queue);
 
-        $delay     = $this->considerDelay($instruction);
-        $queueName = $this->considerQueue($instruction);
-        $timeout   = $this->considerTimeout($instruction);
+            $delay     = $this->considerDelay($instruction);
+            $queueName = $this->considerQueue($instruction);
+            $timeout   = $this->considerTimeout($instruction);
 
-        $job = new AsyncHandlerJob($id, $instruction, $handlerClass, $cleanOnSuccess);
+            $job = new AsyncHandlerJob($id, $instruction, $handlerClass, $cleanOnSuccess);
 
-        if ($timeout) {
-            $job->timeout($timeout);
-        }
+            if ($timeout) {
+                $job->timeout($timeout);
+            }
 
-        if ($delay) {
-            $queue->later($delay, $job, '', $queueName);
-        } else {
-            $queue->push($job, '', $queueName);
+            if ($delay) {
+                $queue->later($delay, $job, '', $queueName);
+            } else {
+                $queue->push($job, '', $queueName);
+            }
+        } catch (\Exception $e) {
+            $this->processRepository->delete($id);
+            throw $e;
         }
     }
 
