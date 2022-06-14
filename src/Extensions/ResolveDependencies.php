@@ -41,7 +41,7 @@ trait ResolveDependencies
             $dependencies = [];
             if ($constructor = $reflection->getConstructor()) {
                 foreach ($constructor->getParameters() as $p) {
-                    if (!$p->getClass()) {
+                    if (!$p->getType()) {
                         throw new RuntimeException(
                             sprintf(
                                 'Cannot resolve handler [%s]. Missing type annotation of parameter [%s]',
@@ -50,7 +50,7 @@ trait ResolveDependencies
                             )
                         );
                     }
-                    $dependencies[] = $container->make($p->getClass()->getName());
+                    $dependencies[] = $container->make($p->getType()->getName());
                 }
             }
 
