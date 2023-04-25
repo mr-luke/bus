@@ -24,7 +24,7 @@ class AppCase extends TestCase
     {
         parent::setUp();
 
-        $this->loadLaravelMigrations();
+        $this->loadLaravelMigrations(['--database' => 'mysql']);
 
         $this->artisan('migrate')->run();
     }
@@ -50,8 +50,19 @@ class AppCase extends TestCase
      */
     protected function getEnvironmentSetUp($app): void
     {
-        $app['path.base'] = __DIR__ . '/..';
-        $app['config']->set('database.default', 'sqlite');
+        $app['path.base'] = __DIR__.'/..';
+        $app['config']->set('database.default', 'mysql');
+        $app['config']->set('database.connections.mysql', [
+            'driver'    => 'mysql',
+            'host'      => env('DB_HOST'),
+            'database'  => env('DB_NAME'),
+            'username'  => env('DB_USER'),
+            'password'  => env('DB_PASS'),
+            'prefix'    => env('DB_PREFIX'),
+            'charset'   => 'utf8',
+            'collation' => 'utf8_unicode_ci',
+            'strict'    => true,
+        ]);
     }
 
     /**
