@@ -8,6 +8,7 @@ use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\Queue\Factory;
 use Illuminate\Log\Logger;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Mrluke\Bus\AsyncHandlerJob;
 use Mrluke\Bus\Contracts\CommandBus;
@@ -215,7 +216,7 @@ class LogicFlowTest extends AppCase
 
     public function testAsyncCommandDispatchesJob()
     {
-        $this->expectsJobs(AsyncHandlerJob::class);
+        Queue::fake();
 
         /* @var CommandBus $bus */
         $bus = $this->app->make(CommandBus::class);
@@ -223,6 +224,8 @@ class LogicFlowTest extends AppCase
 
         $bus->cleanOnSuccess = true;
         $bus->dispatch(new AsyncHelloCommand('Hello new world'));
+
+        Queue::assertPushed(AsyncHandlerJob::class);
     }
 
     public function testAsyncCommandDoesntThrowOnFail()
@@ -326,7 +329,7 @@ class LogicFlowTest extends AppCase
 
     public function testAsyncCommandFiresMultipleHandlers()
     {
-        $this->expectsJobs([AsyncHandlerJob::class, AsyncHandlerJob::class]);
+        Queue::fake();
 
         $container = $this->app->make(Container::class);
 
@@ -341,13 +344,15 @@ class LogicFlowTest extends AppCase
         );
 
         $bus->map([AsyncHelloCommand::class => [HelloHandler::class, ErrorHandler::class]]);
-
         $bus->dispatch(new AsyncHelloCommand('Hello new world'));
+
+        Queue::assertPushed(AsyncHandlerJob::class);
+        Queue::assertPushed( AsyncHandlerJob::class);
     }
 
     public function testAsyncCommandWithForcedHandlerFiresLessJobs()
     {
-        $this->expectsJobs([AsyncHandlerJob::class]);
+        Queue::fake();
 
         $container = $this->app->make(Container::class);
 
@@ -368,5 +373,7 @@ class LogicFlowTest extends AppCase
         $this->assertTrue(
             $process->isPending()
         );
+
+        Queue::assertPushed(AsyncHandlerJob::class);
     }
 }
