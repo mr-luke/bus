@@ -9,22 +9,18 @@ use Mrluke\Bus\Contracts\Config;
  * Class CreateBusProcessesTable
  *
  * @author  Krzysztof Ustowski <krzysztof.ustowski@movecloser.pl>
- * @version 1.0.0
  * @licence MIT
  * @link    https://github.com/mr-luke/bus
  */
-class AddDataToBusProcessesTable extends Migration
+return new class extends Migration
 {
     /**
      * Instance of EventStore.
      *
      * @var Config
      */
-    protected $config;
+    protected Config $config;
 
-    /**
-     * @throws \Illuminate\Contracts\Container\BindingResolutionException
-     */
     public function __construct()
     {
         $this->config = app()->make(Config::class);
@@ -35,7 +31,7 @@ class AddDataToBusProcessesTable extends Migration
      *
      * @return void
      */
-    public function up()
+    public function up(): void
     {
         Schema::table($this->config->get('table'), function (Blueprint $table) {
             $table->json('data')->nullable()->after('results');
@@ -48,11 +44,11 @@ class AddDataToBusProcessesTable extends Migration
      *
      * @return void
      */
-    public function down()
+    public function down(): void
     {
         Schema::table($this->config->get('table'), function (Blueprint $table) {
             $table->dropColumn('data');
             $table->dropColumn('related');
         });
     }
-}
+};

@@ -10,23 +10,19 @@ use Mrluke\Bus\Contracts\Process;
 /**
  * Class CreateBusProcessesTable
  *
- * @author  Łukasz Sitnicki <lukasz.sitnicki@movecloser.pl>
- * @version 1.0.0
+ * @author  Łukasz Sitnicki <lukasz.sitnicki@gmail.pl>
  * @licence MIT
  * @link    https://github.com/mr-luke/bus
  */
-class CreateBusProcessesTable extends Migration
+return new class extends Migration
 {
     /**
      * Instance of EventStore.
      *
      * @var Config
      */
-    protected $config;
+    protected Config $config;
 
-    /**
-     * @throws \Illuminate\Contracts\Container\BindingResolutionException
-     */
     public function __construct()
     {
         $this->config = app()->make(Config::class);
@@ -37,7 +33,7 @@ class CreateBusProcessesTable extends Migration
      *
      * @return void
      */
-    public function up()
+    public function up(): void
     {
         Schema::create(
             $this->config->get('table'),
@@ -77,7 +73,7 @@ class CreateBusProcessesTable extends Migration
      *
      * @return void
      */
-    public function down()
+    public function down(): void
     {
         if ($this->config->get('users.table')) {
             Schema::table(
@@ -92,4 +88,4 @@ class CreateBusProcessesTable extends Migration
 
         Schema::dropIfExists($this->config->get('table'));
     }
-}
+};

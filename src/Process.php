@@ -17,7 +17,7 @@ use stdClass;
 /**
  * Class Process
  *
- * @author  Łukasz Sitnicki <lukasz.sitnicki@movecloser.pl>
+ * @author  Łukasz Sitnicki <lukasz.sitnicki@gmail.com>
  * @author  Krzysztof Ustowski <krzysztof.ustowski@movecloser.pl>
  * @version 1.1.0
  * @licence MIT

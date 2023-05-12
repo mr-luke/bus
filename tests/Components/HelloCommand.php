@@ -7,8 +7,7 @@ use Mrluke\Bus\Contracts\Command;
 /**
  * Class HelloCommand
  *
- * @author  Łukasz Sitnicki <lukasz.sitnicki@movecloser.pl>
- * @version 1.0.0
+ * @author  Łukasz Sitnicki <lukasz.sitnicki@gmail.com>
  * @package Tests\Components
  * @codeCoverageIgnore
  */

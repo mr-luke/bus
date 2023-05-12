@@ -10,7 +10,6 @@ use Mrluke\Bus\Contracts\HandlerResult as Contract;
  * Database implementation of ProcessRepository
  *
  * @author  Krzysztof Ustowski <krzysztof.ustowski@movecloser.pl>
- * @version 1.0.0
  * @licence MIT
  * @link    https://github.com/mr-luke/bus
  * @package Mrluke\Bus
