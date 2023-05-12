@@ -9,7 +9,6 @@ use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Str;
-use InvalidArgumentException;
 use Mrluke\Bus\Contracts\HandlerResult;
 use Mrluke\Bus\Contracts\Process;
 use Mrluke\Bus\Contracts\ProcessRepository;
@@ -22,7 +21,6 @@ use Mrluke\Configuration\Contracts\ArrayHost;
  *
  * @author  Łukasz Sitnicki <lukasz.sitnicki@gmail.com>
  * @author  Krzysztof Ustowski <krzysztof.ustowski@movecloser.pl>
- * @version 1.1.0
  * @licence MIT
  * @link    https://github.com/mr-luke/bus
  * @package Mrluke\Bus
@@ -55,28 +53,27 @@ class DatabaseProcessRepository implements ProcessRepository
      */
     public function __construct(ArrayHost $config, Connection $connection, Guard $guard)
     {
-        $this->config     = $config;
+        $this->config = $config;
         $this->connection = $connection;
-        $this->guard      = $guard;
+        $this->guard = $guard;
     }
 
     /**
      * @inheritDoc
      */
     public function applySubResult(
-        $processId,
-        string $handler,
-        string $status,
-        HandlerResult $result
+        Process|string $processId,
+        string         $handler,
+        string         $status,
+        HandlerResult  $result
     ): Process {
-        $this->validateIdentifier($processId);
         $process = is_string($processId) ? $this->find($processId) : $processId;
 
         $payload = [
             'results' => $process->applyResult($handler, $status, $result->getFeedback()),
             'related' => $process->applyRelated($result->getRelated()),
-            'data'    => $process->applyData($result->getData()),
-            'status'  => $process->status()
+            'data' => $process->applyData($result->getData()),
+            'status' => $process->status()
         ];
 
         if (!is_null($payload['data'])) {
@@ -86,8 +83,8 @@ class DatabaseProcessRepository implements ProcessRepository
         }
 
         foreach ($payload as $k => $v) {
-            if (in_array($k, ['results', 'data', 'related']) && !is_null($payload[$k])) {
-                $payload[$k] = json_encode($payload[$k]);
+            if (in_array($k, ['results', 'data', 'related']) && !is_null($v)) {
+                $payload[$k] = json_encode($v);
             }
         }
 
@@ -99,9 +96,8 @@ class DatabaseProcessRepository implements ProcessRepository
     /**
      * @inheritDoc
      */
-    public function cancel($processId): Process
+    public function cancel(Process|string $processId): Process
     {
-        $this->validateIdentifier($processId);
         $process = is_string($processId) ? $this->find($processId) : $processId;
 
         if ($process->isPending() || $process->isFinished()) {
@@ -113,7 +109,7 @@ class DatabaseProcessRepository implements ProcessRepository
         $this->getBuilder()->where('id', $process->id())->update(
             [
                 'finished_at' => $process->cancel(),
-                'status'      => $process->status()
+                'status' => $process->status()
             ]
         );
 
@@ -170,10 +166,8 @@ class DatabaseProcessRepository implements ProcessRepository
     /**
      * @inheritDoc
      */
-    public function delete($processId): void
+    public function delete(Process|string $processId): void
     {
-        $this->validateIdentifier($processId);
-
         $this->getBuilder()->delete(
             is_string($processId) ? $processId : $processId->id()
         );
@@ -198,9 +192,8 @@ class DatabaseProcessRepository implements ProcessRepository
     /**
      * @inheritDoc
      */
-    public function finish($processId): Process
+    public function finish(Process|string $processId): Process
     {
-        $this->validateIdentifier($processId);
         $process = is_string($processId) ? $this->find($processId) : $processId;
 
         if ($process->isFinished()) {
@@ -212,7 +205,7 @@ class DatabaseProcessRepository implements ProcessRepository
         $this->getBuilder()->where('id', $process->id())->update(
             [
                 'finished_at' => $process->finish(),
-                'status'      => $process->status()
+                'status' => $process->status()
             ]
         );
 
@@ -222,9 +215,8 @@ class DatabaseProcessRepository implements ProcessRepository
     /**
      * @inheritDoc
      */
-    public function start($processId): Process
+    public function start(Process|string $processId): Process
     {
-        $this->validateIdentifier($processId);
         $process = is_string($processId) ? $this->find($processId) : $processId;
 
         if ($process->isPending()) {
@@ -236,7 +228,7 @@ class DatabaseProcessRepository implements ProcessRepository
         $this->getBuilder()->where('id', $process->id())->update(
             [
                 'started_at' => $process->start(),
-                'status'     => $process->status()
+                'status' => $process->status()
             ]
         );
 
@@ -251,20 +243,5 @@ class DatabaseProcessRepository implements ProcessRepository
     private function getBuilder(): Builder
     {
         return $this->connection->table($this->config->get('table'));
-    }
-
-    /**
-     * Determine if processId has correct type.
-     *
-     * @param $processId
-     * @return void
-     */
-    private function validateIdentifier($processId): void
-    {
-        if (!is_string($processId) && !$processId instanceof Process) {
-            throw new InvalidArgumentException(
-                sprintf('ProcessId argument must be type of string or %s', Process::class)
-            );
-        }
     }
 }

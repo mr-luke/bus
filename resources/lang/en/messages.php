@@ -1,5 +1,5 @@
 <?php
 
 return [
-    'process-disrupted' => 'Process disrupted',
+    'process-disrupted' => 'Process disrupted: :message',
 ];

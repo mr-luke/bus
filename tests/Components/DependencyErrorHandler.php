@@ -16,7 +16,7 @@ use Mrluke\Bus\Contracts\Instruction;
 class DependencyErrorHandler implements Handler
 {
     /**
-     * @param mixed
+     * @param mixed $repository
      * @return void
      */
     public function __construct($repository)

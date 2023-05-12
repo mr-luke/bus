@@ -21,7 +21,7 @@ trait ResolveDependencies
      *
      * @var array
      */
-    private $resolved = [];
+    private array $resolved = [];
 
     /**
      * Resolve class based on constructor.

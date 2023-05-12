@@ -22,7 +22,7 @@ class CommandBus extends SingleHandlerBus implements CommandBusContract, HasAsyn
 {
     use UsesDefaultQueue;
 
-    /** Determine if process should be delete on success.
+    /** Determine if process should be deleted on success.
      *
      * @var bool
      */

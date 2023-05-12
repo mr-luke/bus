@@ -52,9 +52,9 @@ class LogicFlowTest extends AppCase
                 'id'           => $id,
                 'bus'          => 'command-bus',
                 'process'      => HelloCommand::class,
-                'status'       => Process::Pending,
+                'status'       => Process::PENDING,
                 'results'      => json_encode(
-                    [HelloHandler::class => ['status' => Process::Pending]]
+                    [HelloHandler::class => ['status' => Process::PENDING]]
                 ),
                 'committed_at' => CarbonImmutable::now()->getPreciseTimestamp(3)
             ]
@@ -80,9 +80,9 @@ class LogicFlowTest extends AppCase
                 'id'           => $id,
                 'bus'          => 'command-bus',
                 'process'      => HelloCommand::class,
-                'status'       => Process::New,
+                'status'       => Process::NEW,
                 'results'      => json_encode(
-                    [HelloHandler::class => ['status' => Process::New]]
+                    [HelloHandler::class => ['status' => Process::NEW]]
                 ),
                 'committed_at' => CarbonImmutable::now()->getPreciseTimestamp(3)
             ]
@@ -94,7 +94,7 @@ class LogicFlowTest extends AppCase
 
         $this->assertTrue(
             DB::table($config->get('table'))
-                ->where('id', $id)->where('status', Process::New)
+                ->where('id', $id)->where('status', Process::NEW)
                 ->exists()
         );
 
@@ -102,7 +102,7 @@ class LogicFlowTest extends AppCase
 
         $this->assertTrue(
             DB::table($config->get('table'))
-                ->where('id', $id)->where('status', Process::Pending)
+                ->where('id', $id)->where('status', Process::PENDING)
                 ->whereNotNull('started_at')
                 ->exists()
         );
@@ -110,12 +110,12 @@ class LogicFlowTest extends AppCase
         $process = $repository->applySubResult(
             $id,
             HelloHandler::class,
-            Process::Succeed,
+            Process::SUCCEED,
             new HandlerResult()
         );
 
         $this->assertEquals(
-            [HelloHandler::class => ['status' => Process::Succeed]],
+            [HelloHandler::class => ['status' => Process::SUCCEED]],
             $process->toArray()['results']
         );
 
@@ -123,7 +123,7 @@ class LogicFlowTest extends AppCase
 
         $this->assertTrue(
             DB::table($config->get('table'))
-                ->where('id', $id)->where('status', Process::Finished)
+                ->where('id', $id)->where('status', Process::FINISHED)
                 ->whereNotNull('finished_at')
                 ->exists()
         );
@@ -157,12 +157,12 @@ class LogicFlowTest extends AppCase
         );
 
         $this->assertEquals(
-            Process::Finished,
+            Process::FINISHED,
             $process->status()
         );
 
         $this->assertEquals(
-            [HelloHandler::class => ['status' => Process::Succeed, 'feedback' => 'Hello world']],
+            [HelloHandler::class => ['status' => Process::SUCCEED, 'feedback' => 'Hello world']],
             $process->toArray()['results']
         );
 
@@ -188,12 +188,12 @@ class LogicFlowTest extends AppCase
         );
 
         $this->assertEquals(
-            Process::Finished,
+            Process::FINISHED,
             $process->status()
         );
 
         $this->assertEquals(
-            [HelloHandler::class => ['status' => Process::Succeed, 'feedback' => 'Hello new world']],
+            [HelloHandler::class => ['status' => Process::SUCCEED, 'feedback' => 'Hello new world']],
             $process->toArray()['results']
         );
 
@@ -243,12 +243,12 @@ class LogicFlowTest extends AppCase
         );
 
         $this->assertEquals(
-            Process::New,
+            Process::NEW,
             $process->status()
         );
 
         $this->assertEquals(
-            [ErrorHandler::class => ['status' => Process::New]],
+            [ErrorHandler::class => ['status' => Process::NEW]],
             $process->toArray()['results']
         );
     }
@@ -267,12 +267,12 @@ class LogicFlowTest extends AppCase
         );
 
         $this->assertEquals(
-            Process::New,
+            Process::NEW,
             $process->status()
         );
 
         $this->assertEquals(
-            [HelloHandler::class => ['status' => Process::New]],
+            [HelloHandler::class => ['status' => Process::NEW]],
             $process->toArray()['results']
         );
     }
@@ -310,14 +310,14 @@ class LogicFlowTest extends AppCase
         );
 
         $this->assertEquals(
-            Process::Finished,
+            Process::FINISHED,
             $process->status()
         );
 
         $this->assertEquals(
             [
-                HelloHandler::class => ['status' => Process::Succeed, 'feedback' => 'Hello new world'],
-                ErrorHandler::class => ['status' => Process::Failed, 'feedback' => 'Hello new world']
+                HelloHandler::class => ['status' => Process::SUCCEED, 'feedback' => 'Hello new world'],
+                ErrorHandler::class => ['status' => Process::FAILED, 'feedback' => 'Hello new world']
             ],
             $process->toArray()['results']
         );

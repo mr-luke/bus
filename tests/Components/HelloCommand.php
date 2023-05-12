@@ -16,7 +16,7 @@ class HelloCommand implements Command
     /**
      * @var string
      */
-    public $greeting;
+    public string $greeting;
 
     public function __construct(string $greeting)
     {

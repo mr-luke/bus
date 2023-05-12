@@ -28,7 +28,7 @@ class ForceSyncHelloHandler implements ForceSync, Handler
     /**
      * @inheritDoc
      */
-    public function handle(Instruction $instruction)
+    public function handle(Instruction $instruction): mixed
     {
         return $instruction->greeting;
     }

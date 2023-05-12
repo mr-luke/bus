@@ -9,7 +9,6 @@ use Mrluke\Bus\Contracts\HandlerResult;
  *
  * @author  Łukasz Sitnicki <lukasz.sitnicki@gmail.com>
  * @author  Krzysztof Ustowski <krzysztof.ustowski@movecloser.pl>
- * @version 1.1.0
  * @licence MIT
  * @link    https://github.com/mr-luke/bus
  * @package Mrluke\Bus\Extensions
@@ -19,11 +18,11 @@ trait TranslateResults
     /**
      * Process result of Handler.
      *
-     * @param $mixedResults
+     * @param mixed $mixedResults
      * @return HandlerResult
      * @codeCoverageIgnore
      */
-    protected function processResult($mixedResults): HandlerResult
+    protected function processResult(mixed $mixedResults): HandlerResult
     {
         if ($mixedResults instanceof HandlerResult) {
             return $mixedResults;

@@ -455,7 +455,7 @@ abstract class SingleHandlerBus implements Bus
             $this->processRepository->applySubResult(
                 $process,
                 get_class($handler),
-                Process::Succeed,
+                Process::SUCCEED,
                 $this->processResult($result)
             );
 
@@ -464,7 +464,7 @@ abstract class SingleHandlerBus implements Bus
             $this->processRepository->applySubResult(
                 $process,
                 get_class($handler),
-                Process::Failed,
+                Process::FAILED,
                 $this->processResult($e->getMessage())
             );
 

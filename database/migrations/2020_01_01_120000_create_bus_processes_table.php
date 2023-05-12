@@ -6,6 +6,7 @@ use Illuminate\Database\Migrations\Migration;
 
 use Mrluke\Bus\Contracts\Config;
 use Mrluke\Bus\Contracts\Process;
+use Mrluke\Configuration\Host;
 
 /**
  * Class CreateBusProcessesTable
@@ -19,9 +20,9 @@ return new class extends Migration
     /**
      * Instance of EventStore.
      *
-     * @var Config
+     * @var \Mrluke\Configuration\Host
      */
-    protected Config $config;
+    protected Host $config;
 
     public function __construct()
     {
@@ -44,12 +45,12 @@ return new class extends Migration
                 $table->enum(
                     'status',
                     [
-                        Process::New,
-                        Process::Pending,
-                        Process::Finished,
-                        Process::Canceled
+                        Process::NEW,
+                        Process::PENDING,
+                        Process::FINISHED,
+                        Process::CANCELED
                     ]
-                )->default(Process::New);
+                )->default(Process::NEW);
                 $table->unsignedInteger('handlers')->default(1);
                 $table->json('results')->nullable();
                 $table->unsignedMediumInteger('pid')->nullable();

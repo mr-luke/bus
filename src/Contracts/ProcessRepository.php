@@ -9,7 +9,6 @@ namespace Mrluke\Bus\Contracts;
  *
  * @author  Łukasz Sitnicki <lukasz.sitnicki@gmail.com>
  * @author  Krzysztof Ustowski <krzysztof.ustowski@movecloser.pl>
- * @version 1.1.0
  * @licence MIT
  * @link    https://github.com/mr-luke/bus
  * @package Mrluke\Bus\Contracts
@@ -19,20 +18,20 @@ interface ProcessRepository
     /**
      * Apply sub-result to process.
      *
-     * @param \Mrluke\Bus\Contracts\Process|string     $processId
-     * @param string                                   $handler
-     * @param string                                   $status
-     * @param \Mrluke\Bus\Contracts\HandlerResult      $result
+     * @param \Mrluke\Bus\Contracts\Process|string $processId
+     * @param string                               $handler
+     * @param string                               $status
+     * @param \Mrluke\Bus\Contracts\HandlerResult  $result
      * @return \Mrluke\Bus\Contracts\Process
      * @throws \Mrluke\Bus\Exceptions\MissingHandler
      * @throws \Mrluke\Bus\Exceptions\MissingProcess
      * @throws \Mrluke\Bus\Exceptions\InvalidAction
      */
     public function applySubResult(
-        $processId,
-        string $handler,
-        string $status,
-        HandlerResult $result
+        Process|string $processId,
+        string         $handler,
+        string         $status,
+        HandlerResult  $result
     ): Process;
 
     /**
@@ -43,7 +42,7 @@ interface ProcessRepository
      * @throws \Mrluke\Bus\Exceptions\MissingProcess
      * @throws \Mrluke\Bus\Exceptions\InvalidAction
      */
-    public function cancel($processId): Process;
+    public function cancel(Process|string $processId): Process;
 
     /**
      * Count processes by given status.
@@ -73,7 +72,7 @@ interface ProcessRepository
      * @param \Mrluke\Bus\Contracts\Process|string $processId
      * @return void
      */
-    public function delete($processId): void;
+    public function delete(Process|string $processId): void;
 
     /**
      * Retrieve process by given id.
@@ -93,7 +92,7 @@ interface ProcessRepository
      * @throws \Mrluke\Bus\Exceptions\MissingProcess
      * @throws \Mrluke\Bus\Exceptions\InvalidAction
      */
-    public function finish($processId): Process;
+    public function finish(Process|string $processId): Process;
 
     /**
      * Start process of given id.
@@ -103,5 +102,5 @@ interface ProcessRepository
      * @throws \Mrluke\Bus\Exceptions\InvalidAction
      * @throws \Mrluke\Bus\Exceptions\MissingProcess
      */
-    public function start($processId): Process;
+    public function start(Process|string $processId): Process;
 }

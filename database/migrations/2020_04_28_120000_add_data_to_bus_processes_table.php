@@ -4,6 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Mrluke\Bus\Contracts\Config;
+use Mrluke\Configuration\Host;
 
 /**
  * Class CreateBusProcessesTable
@@ -17,9 +18,9 @@ return new class extends Migration
     /**
      * Instance of EventStore.
      *
-     * @var Config
+     * @var \Mrluke\Configuration\Host
      */
-    protected Config $config;
+    protected Host $config;
 
     public function __construct()
     {

@@ -24,7 +24,7 @@ interface HandlerResult
      *
      * @return mixed | null
      */
-    public function getData();
+    public function getData(): mixed;
 
     /**
      * Simpler string message returned by handler.

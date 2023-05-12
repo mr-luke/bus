@@ -89,12 +89,12 @@ class DatabaseProcessRepositoryTest extends TestCase
         $process = $repository->applySubResult(
             self::ExistingId,
             ProcessTest::HandlerName,
-            Process::Succeed,
+            Process::SUCCEED,
             new HandlerResult($feedback)
         );
 
         $this->assertEquals(
-            [ProcessTest::HandlerName => ['status' => Process::Succeed, 'feedback' => $feedback]],
+            [ProcessTest::HandlerName => ['status' => Process::SUCCEED, 'feedback' => $feedback]],
             $process->toArray()['results']
         );
     }
@@ -115,7 +115,7 @@ class DatabaseProcessRepositoryTest extends TestCase
 
     public function testIfCancelSetsProperStatusToProcess()
     {
-        $builder = $this->buildBuilderMockWithFind(self::ExistingId, Process::New);
+        $builder = $this->buildBuilderMockWithFind(self::ExistingId, Process::NEW);
         /* @var \PHPUnit\Framework\MockObject\MockObject $builder */
         $builder->expects($this->once())
             ->method('where')
@@ -136,7 +136,7 @@ class DatabaseProcessRepositoryTest extends TestCase
         $process = $repository->cancel(self::ExistingId);
 
         $this->assertEquals(
-            Process::Canceled,
+            Process::CANCELED,
             $process->status()
         );
     }
@@ -204,7 +204,7 @@ class DatabaseProcessRepositoryTest extends TestCase
     {
         $this->expectException(InvalidAction::class);
 
-        $builder = $this->buildBuilderMockWithFind(self::ExistingId, Process::Finished);
+        $builder = $this->buildBuilderMockWithFind(self::ExistingId, Process::FINISHED);
         $repository = new DatabaseProcessRepository(
             $this->buildHostMock(1),
             $this->buildConnectionMock($builder, 1),
@@ -217,7 +217,7 @@ class DatabaseProcessRepositoryTest extends TestCase
     public function testIfFinishSetsCorrectStatusOnProcess()
     {
         $process = ProcessTest::createCorrectModel(self::ExistingId);
-        $process->results = '{"' . ProcessTest::HandlerName . '":{"status":"' . Process::Succeed . '"}}';
+        $process->results = '{"' . ProcessTest::HandlerName . '":{"status":"' . Process::SUCCEED . '"}}';
 
         $builder = $this->buildBuilderMock();
         /* @var \PHPUnit\Framework\MockObject\MockObject $builder */
@@ -245,7 +245,7 @@ class DatabaseProcessRepositoryTest extends TestCase
         $process = $repository->finish(self::ExistingId);
 
         $this->assertEquals(
-            Process::Finished,
+            Process::FINISHED,
             $process->status()
         );
     }
@@ -266,7 +266,7 @@ class DatabaseProcessRepositoryTest extends TestCase
 
     public function testIfStartSetsProperStatusOnProcess()
     {
-        $builder = $this->buildBuilderMockWithFind(self::ExistingId, Process::New);
+        $builder = $this->buildBuilderMockWithFind(self::ExistingId, Process::NEW);
         /* @var \PHPUnit\Framework\MockObject\MockObject $builder */
         $builder->expects($this->once())
             ->method('where')
@@ -287,7 +287,7 @@ class DatabaseProcessRepositoryTest extends TestCase
         $process = $repository->start(self::ExistingId);
 
         $this->assertEquals(
-            Process::Pending,
+            Process::PENDING,
             $process->status()
         );
     }
@@ -313,7 +313,7 @@ class DatabaseProcessRepositoryTest extends TestCase
      */
     protected function buildBuilderMockWithFind(
         string $id,
-        string $status = Process::Pending
+        string $status = Process::PENDING
     ): Builder {
         $builder = $this->buildBuilderMock();
         /* @var \PHPUnit\Framework\MockObject\MockObject $builder */

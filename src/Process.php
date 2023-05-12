@@ -19,7 +19,6 @@ use stdClass;
  *
  * @author  Łukasz Sitnicki <lukasz.sitnicki@gmail.com>
  * @author  Krzysztof Ustowski <krzysztof.ustowski@movecloser.pl>
- * @version 1.1.0
  * @licence MIT
  * @link    https://github.com/mr-luke/bus
  * @package Mrluke\Bus
@@ -39,7 +38,7 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
     /**
      * @var string|int|null
      */
-    private $committedBy;
+    private string|int|null $committedBy;
 
     /**
      * @var \Carbon\CarbonImmutable|null
@@ -89,7 +88,7 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
     private ?array $related;
 
     /**
-     * List of serialized HanderResult data
+     * List of serialized HandlerResult data
      *
      * @var array|null
      */
@@ -105,24 +104,24 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
      * @param array|null                   $related
      * @param array|null                   $data
      * @param int|null                     $pid
-     * @param string|int|null              $committedBy
+     * @param int|string|null              $committedBy
      * @param \Carbon\CarbonImmutable      $committedAt
      * @param \Carbon\CarbonImmutable|null $startedAt
      * @param \Carbon\CarbonImmutable|null $finishedAt
      * @throws \Mrluke\Bus\Exceptions\InvalidAction
      */
     public function __construct(
-        string $id,
-        string $bus,
-        string $process,
-        string $status,
-        int $handlers,
-        array $results,
-        ?array $related,
-        ?array $data,
-        ?int $pid,
-        $committedBy,
-        CarbonImmutable $committedAt,
+        string           $id,
+        string           $bus,
+        string           $process,
+        string           $status,
+        int              $handlers,
+        array            $results,
+        ?array           $related,
+        ?array           $data,
+        ?int             $pid,
+        int|string|null  $committedBy,
+        CarbonImmutable  $committedAt,
         ?CarbonImmutable $startedAt = null,
         ?CarbonImmutable $finishedAt = null
     ) {
@@ -147,7 +146,7 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
      * @param mixed|null $data
      * @return array|null
      */
-    public function applyData($data): ?array
+    public function applyData(mixed $data): ?array
     {
         if (is_null($data)) {
             return $this->data;
@@ -220,7 +219,7 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
      */
     public function cancel(): int
     {
-        $this->status     = ProcessContract::Canceled;
+        $this->status     = ProcessContract::CANCELED;
         $this->finishedAt = CarbonImmutable::now();
 
         return (int)$this->finishedAt->valueOf();
@@ -249,18 +248,18 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
         }
 
         $id  = Str::uuid()->toString();
-        $pid = getmypid() ? getmypid() : null;
+        $pid = getmypid() ?: null;
 
         $results = [];
         foreach ($handlers as $h) {
-            $results[$h] = ['status' => ProcessContract::New];
+            $results[$h] = ['status' => ProcessContract::NEW];
         }
 
         return new self(
             $id,
             $busName,
             $process,
-            ProcessContract::New,
+            ProcessContract::NEW,
             count($handlers),
             $results,
             null,
@@ -293,7 +292,7 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
             );
         }
 
-        $this->status     = ProcessContract::Finished;
+        $this->status     = ProcessContract::FINISHED;
         $this->finishedAt = CarbonImmutable::now();
 
         return (int)$this->finishedAt->valueOf();
@@ -313,7 +312,7 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
         foreach ($toCheck as $f) {
             if ($model->{$f} !== null && ($model->{$f} >> 40) < 1) {
                 throw new InvalidArgumentException(
-                    sprintf('Model property [%s] requires microtime precision.', $f)
+                    sprintf('Model property [%s] requires micro-time precision.', $f)
                 );
             }
         }
@@ -366,7 +365,7 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
      */
     public function isFinished(): bool
     {
-        return $this->status === ProcessContract::Finished;
+        return $this->status === ProcessContract::FINISHED;
     }
 
     /**
@@ -377,7 +376,7 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
      */
     public function isPending(): bool
     {
-        return $this->status === ProcessContract::Pending;
+        return $this->status === ProcessContract::PENDING;
     }
 
     /**
@@ -392,8 +391,8 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
         }
 
         $aggregated = 0;
-        foreach ($this->results as $h => $r) {
-            if ($r['status'] === ProcessContract::Succeed) {
+        foreach ($this->results as $r) {
+            if ($r['status'] === ProcessContract::SUCCEED) {
                 ++$aggregated;
             }
         }
@@ -416,8 +415,8 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
     public function qualifyAsFinished(): bool
     {
         $aggregated = 0;
-        foreach ($this->results as $h => $r) {
-            if (in_array($r['status'], [ProcessContract::Succeed, ProcessContract::Failed])) {
+        foreach ($this->results as $r) {
+            if (in_array($r['status'], [ProcessContract::SUCCEED, ProcessContract::FAILED])) {
                 ++$aggregated;
             }
         }
@@ -430,13 +429,13 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
      */
     public function qualifyToStart(): bool
     {
-        if (!in_array($this->status, [ProcessContract::New, ProcessContract::Canceled])) {
+        if (!in_array($this->status, [ProcessContract::NEW, ProcessContract::CANCELED])) {
             return false;
         }
 
         $aggregated = 0;
-        foreach ($this->results as $h => $r) {
-            if ($r['status'] === ProcessContract::New) {
+        foreach ($this->results as $r) {
+            if ($r['status'] === ProcessContract::NEW) {
                 ++$aggregated;
             }
         }
@@ -489,7 +488,7 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
             );
         }
 
-        $this->status    = ProcessContract::Pending;
+        $this->status    = ProcessContract::PENDING;
         $this->startedAt = CarbonImmutable::now();
 
         return (int)$this->startedAt->valueOf();
@@ -525,8 +524,8 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
             'pid'         => $this->pid,
             'committedBy' => $this->committedBy,
             'committedAt' => $this->committedAt->getPreciseTimestamp(3),
-            'startedAt'   => $this->startedAt ? $this->startedAt->getPreciseTimestamp(3) : null,
-            'finishedAt'  => $this->finishedAt ? $this->finishedAt->getPreciseTimestamp(3) : null
+            'startedAt'   => $this->startedAt?->getPreciseTimestamp(3),
+            'finishedAt'  => $this->finishedAt?->getPreciseTimestamp(3)
         ];
     }
 
@@ -542,8 +541,8 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
         if (!in_array(
             $candidate,
             [
-                ProcessContract::New, ProcessContract::Pending,
-                ProcessContract::Finished, ProcessContract::Canceled
+                ProcessContract::NEW, ProcessContract::PENDING,
+                ProcessContract::FINISHED, ProcessContract::CANCELED
             ]
         )) {
             throw new InvalidAction(
@@ -566,8 +565,8 @@ class Process implements Arrayable, JsonSerializable, ProcessContract
         if (!in_array(
             $candidate,
             [
-                ProcessContract::New, ProcessContract::Pending,
-                ProcessContract::Succeed, ProcessContract::Failed
+                ProcessContract::NEW, ProcessContract::PENDING,
+                ProcessContract::SUCCEED, ProcessContract::FAILED
             ]
         )) {
             throw new InvalidAction(

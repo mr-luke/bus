@@ -10,7 +10,6 @@ use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Log\Logger;
 use Illuminate\Queue\InteractsWithQueue;
-
 use Mrluke\Bus\Contracts\Instruction;
 use Mrluke\Bus\Contracts\Process as ProcessContract;
 use Mrluke\Bus\Contracts\ProcessRepository;
@@ -22,13 +21,13 @@ class AsyncHandlerJob implements ShouldQueue
     use InteractsWithQueue, Queueable, ResolveDependencies, TranslateResults;
 
     /**
-     * Timout for processs (in seconds)
+     * Timout for processes (in seconds)
      *
      * @var int
      */
     public int $timeout;
 
-    /** Determine if process should be delete on success.
+    /** Determine if process should be deleted on success.
      *
      * @var bool
      */
@@ -61,15 +60,15 @@ class AsyncHandlerJob implements ShouldQueue
      * @retuen void
      */
     public function __construct(
-        string $processId,
+        string      $processId,
         Instruction $instruction,
-        string $handlerClass,
-        bool $cleanOnSuccess
+        string      $handlerClass,
+        bool        $cleanOnSuccess
     ) {
         $this->cleanOnSuccess = $cleanOnSuccess;
-        $this->instruction    = $instruction;
-        $this->handlerClass   = $handlerClass;
-        $this->processId      = $processId;
+        $this->instruction = $instruction;
+        $this->handlerClass = $handlerClass;
+        $this->processId = $processId;
     }
 
     /**
@@ -85,8 +84,11 @@ class AsyncHandlerJob implements ShouldQueue
      * @throws \Mrluke\Bus\Exceptions\MissingProcess
      * @throws \ReflectionException
      */
-    public function handle(ProcessRepository $repository, Container $container, Logger $logger)
-    {
+    public function handle(
+        ProcessRepository $repository,
+        Container         $container,
+        Logger            $logger
+    ): void {
         $handler = $this->resolveClass($container, $this->handlerClass);
         $process = $repository->find($this->processId);
 
@@ -102,7 +104,7 @@ class AsyncHandlerJob implements ShouldQueue
             $repository->applySubResult(
                 $process,
                 $this->handlerClass,
-                ProcessContract::Succeed,
+                ProcessContract::SUCCEED,
                 $result
             );
 
@@ -111,7 +113,7 @@ class AsyncHandlerJob implements ShouldQueue
                 [
                     'process' => $this->processId,
                     'handler' => $this->handlerClass,
-                    'result'  => $result
+                    'result' => $result
                 ]
             );
 
@@ -120,7 +122,7 @@ class AsyncHandlerJob implements ShouldQueue
             $repository->applySubResult(
                 $process,
                 $this->handlerClass,
-                ProcessContract::Failed,
+                ProcessContract::FAILED,
                 new HandlerResult($e->getMessage())
             );
         }
@@ -133,20 +135,22 @@ class AsyncHandlerJob implements ShouldQueue
     }
 
     /**
-     * @param  \Exception  $e
+     * @param \Exception $e
      *
      * @throws \Illuminate\Contracts\Container\BindingResolutionException
      */
-    public function failed(Exception $e)
+    public function failed(Exception $e): void
     {
         $repository = app()->make(ProcessRepository::class);
-        $process    = $repository->find($this->processId);
+        $process = $repository->find($this->processId);
 
         $repository->applySubResult(
             $process,
             $this->handlerClass,
-            ProcessContract::Failed,
-            new HandlerResult(__('bus::messages.process-disrupted'))
+            ProcessContract::FAILED,
+            new HandlerResult(
+                __('bus::messages.process-disrupted', ['message' => $e->getMessage()])
+            )
         );
 
         if ($process->qualifyAsFinished()) {
@@ -157,7 +161,7 @@ class AsyncHandlerJob implements ShouldQueue
     /**
      * @param $timeout
      */
-    public function timeout($timeout)
+    public function timeout($timeout): void
     {
         $this->timeout = $timeout;
     }
