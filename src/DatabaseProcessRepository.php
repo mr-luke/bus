@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Mrluke\Bus;
 
-use Exception;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Query\Builder;
@@ -14,6 +13,7 @@ use Mrluke\Bus\Contracts\Process;
 use Mrluke\Bus\Contracts\ProcessRepository;
 use Mrluke\Bus\Exceptions\InvalidAction;
 use Mrluke\Bus\Exceptions\MissingProcess;
+use Mrluke\Bus\Exceptions\RuntimeException;
 use Mrluke\Configuration\Contracts\ArrayHost;
 
 /**
@@ -135,7 +135,7 @@ class DatabaseProcessRepository implements ProcessRepository
      */
     public function create(string $busName, string $process, array $handlers): Process
     {
-        if (count($handlers) === 0) {
+        if (empty($handlers)) {
             throw new InvalidAction('Cannot create process with no handlers');
         }
 
@@ -157,7 +157,7 @@ class DatabaseProcessRepository implements ProcessRepository
 
 
         if (!$this->getBuilder()->insert($payload)) {
-            throw new Exception('Creating new process failed.');
+            throw new RuntimeException('Creating new process failed.');
         }
 
         return $process;

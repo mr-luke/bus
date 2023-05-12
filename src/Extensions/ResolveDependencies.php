@@ -4,7 +4,7 @@ namespace Mrluke\Bus\Extensions;
 
 use Illuminate\Contracts\Container\Container;
 use ReflectionClass;
-use RuntimeException;
+use Mrluke\Bus\Exceptions\RuntimeException;
 
 /**
  * Trait ResolveDependencies
@@ -30,6 +30,7 @@ trait ResolveDependencies
      * @param string                                    $className
      * @return mixed
      * @throws \Illuminate\Contracts\Container\BindingResolutionException
+     * @throws \Mrluke\Bus\Exceptions\RuntimeException
      * @throws \ReflectionException
      */
     protected function resolveClass(Container $container, string $className)
