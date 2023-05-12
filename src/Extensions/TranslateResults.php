@@ -28,18 +28,12 @@ trait TranslateResults
             return $mixedResults;
         }
 
-        if (is_array($mixedResults)) {
-            return new \Mrluke\Bus\HandlerResult(
-                json_encode($mixedResults)
-            );
+        if (is_null($mixedResults)) {
+            return new \Mrluke\Bus\HandlerResult();
         }
 
-        if (is_bool($mixedResults) || is_numeric($mixedResults) || is_string($mixedResults)) {
-            return new \Mrluke\Bus\HandlerResult(
-                (string)$mixedResults
-            );
-        }
-
-        return new \Mrluke\Bus\HandlerResult();
+        return new \Mrluke\Bus\HandlerResult(
+            is_array($mixedResults) ? json_encode($mixedResults) : (string)$mixedResults
+        );
     }
 }
