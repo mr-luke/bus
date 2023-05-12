@@ -11,24 +11,23 @@ use stdClass;
  *
  * @author  Łukasz Sitnicki <lukasz.sitnicki@gmail.com>
  * @author  Krzysztof Ustowski <krzysztof.ustowski@movecloser.pl>
- * @version 1.1.0
  * @licence MIT
  * @link     https://github.com/mr-luke/bus
  * @package Mrluke\Bus\Contracts
  */
 interface Process
 {
-    const Canceled = 'canceled';
+    const CANCELED = 'canceled';
 
-    const Finished = 'finished';
+    const FINISHED = 'finished';
 
-    const Failed   = 'failed';
+    const FAILED = 'failed';
 
-    const New      = 'new';
+    const NEW = 'new';
 
-    const Pending  = 'pending';
+    const PENDING = 'pending';
 
-    const Succeed  = 'succeed';
+    const SUCCEED = 'succeed';
 
     /**
      * Apply handler data object to process.
@@ -36,7 +35,7 @@ interface Process
      * @param mixed|null $data
      * @return array|null
      */
-    public function applyData($data): ?array;
+    public function applyData(mixed $data): ?array;
 
     /**
      * Apply related processes to process.
@@ -49,16 +48,16 @@ interface Process
     /**
      * Apply result for given handler.
      *
-     * @param string $handler
-     * @param string $status
+     * @param string      $handler
+     * @param string      $status
      * @param string|null $feedback
      * @return array
      * @throws \Mrluke\Bus\Exceptions\InvalidAction
      * @throws \Mrluke\Bus\Exceptions\MissingHandler
      */
     public function applyResult(
-        string $handler,
-        string $status,
+        string  $handler,
+        string  $status,
         ?string $feedback = null
     ): array;
 
@@ -82,8 +81,8 @@ interface Process
     public static function create(
         string $busName,
         string $process,
-        array $handlers,
-        int $auth
+        array  $handlers,
+        int    $auth
     ): Process;
 
     /**

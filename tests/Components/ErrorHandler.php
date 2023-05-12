@@ -9,8 +9,7 @@ use Mrluke\Bus\Contracts\Instruction;
 /**
  * Class HelloHandler
  *
- * @author  Łukasz Sitnicki <lukasz.sitnicki@movecloser.pl>
- * @version 1.0.0
+ * @author  Łukasz Sitnicki <lukasz.sitnicki@gmail.com>
  * @licence MIT
  * @package Tests\Components
  * @codeCoverageIgnore
@@ -20,7 +19,7 @@ class ErrorHandler implements Handler
     /**
      * @inheritDoc
      */
-    public function handle(Instruction $instruction)
+    public function handle(Instruction $instruction): mixed
     {
         throw new Exception($instruction->greeting);
     }

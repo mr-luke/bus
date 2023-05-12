@@ -10,8 +10,7 @@ use Mrluke\Bus\Contracts\ProcessRepository;
 /**
  * Class HelloHandler
  *
- * @author  Łukasz Sitnicki <lukasz.sitnicki@movecloser.pl>
- * @version 1.0.0
+ * @author  Łukasz Sitnicki <lukasz.sitnicki@gmail.com>
  * @licence MIT
  * @package Tests\Components
  * @codeCoverageIgnore
@@ -29,7 +28,7 @@ class ForceSyncHelloHandler implements ForceSync, Handler
     /**
      * @inheritDoc
      */
-    public function handle(Instruction $instruction)
+    public function handle(Instruction $instruction): mixed
     {
         return $instruction->greeting;
     }

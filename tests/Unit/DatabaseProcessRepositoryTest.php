@@ -30,19 +30,6 @@ class DatabaseProcessRepositoryTest extends TestCase
         );
     }
 
-    public function testIfCancelThrowsWhenIncorrectTypeOfProcessIdGiven()
-    {
-        $this->expectException(\InvalidArgumentException::class);
-
-        $repository = new DatabaseProcessRepository(
-            $this->getMockBuilder(ArrayHost::class)->getMock(),
-            $this->getMockBuilder(Connection::class)->disableOriginalConstructor()->getMock(),
-            $this->getMockBuilder(Guard::class)->getMock()
-        );
-
-        $repository->cancel(1);
-    }
-
     /**
      * @throws \Mrluke\Bus\Exceptions\InvalidAction
      */
@@ -85,7 +72,7 @@ class DatabaseProcessRepositoryTest extends TestCase
 
         $builder->expects($this->once())
             ->method('where')
-            ->with('status', Process::Pending)
+            ->with('status', Process::PENDING)
             ->willReturnSelf();
 
         $builder->expects($this->once())
@@ -99,7 +86,7 @@ class DatabaseProcessRepositoryTest extends TestCase
         );
 
         $this->assertEquals(
-            $repository->count(Process::Pending),
+            $repository->count(Process::PENDING),
             $expectedValue
         );
     }

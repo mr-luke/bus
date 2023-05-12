@@ -16,8 +16,7 @@ use Mrluke\Bus\Contracts\ProcessRepository;
 /**
  * Class BusServiceProvider
  *
- * @author  Łukasz Sitnicki <lukasz.sitnicki@movecloser.pl>
- * @version 1.0.0
+ * @author  Łukasz Sitnicki <lukasz.sitnicki@gmail.com>
  * @licence MIT
  * @link    https://github.com/mr-luke/bus
  * @package Mrluke\Bus
@@ -32,7 +31,7 @@ final class BusServiceProvider extends ServiceProvider
      *
      * @return void
      */
-    public function boot()
+    public function boot(): void
     {
         $this->loadMigrationsFrom(__DIR__ .'/../database/migrations');
 
@@ -54,7 +53,7 @@ final class BusServiceProvider extends ServiceProvider
      *
      * @return void
      */
-    public function register()
+    public function register(): void
     {
         $this->mergeConfigFrom(__DIR__ .'/../config/bus.php', 'bus');
 

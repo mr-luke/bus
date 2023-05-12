@@ -6,7 +6,6 @@ namespace Mrluke\Bus\Contracts;
  * Interface HandlerReslt
  *
  * @author  Krzysztof Ustowski <krzysztof.ustowski@movecloser.pl>
- * @version 1.0.0
  * @licence MIT
  * @link    https://github.com/mr-luke/bus
  * @package Mrluke\Bus\Contracts
@@ -25,7 +24,7 @@ interface HandlerResult
      *
      * @return mixed | null
      */
-    public function getData();
+    public function getData(): mixed;
 
     /**
      * Simpler string message returned by handler.

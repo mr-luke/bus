@@ -7,8 +7,7 @@ use Mrluke\Bus\Contracts\Command;
 /**
  * Class HelloCommand
  *
- * @author  Łukasz Sitnicki <lukasz.sitnicki@movecloser.pl>
- * @version 1.0.0
+ * @author  Łukasz Sitnicki <lukasz.sitnicki@gmail.com>
  * @package Tests\Components
  * @codeCoverageIgnore
  */
@@ -17,7 +16,7 @@ class HelloCommand implements Command
     /**
      * @var string
      */
-    public $greeting;
+    public string $greeting;
 
     public function __construct(string $greeting)
     {

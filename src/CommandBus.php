@@ -13,8 +13,7 @@ use Mrluke\Bus\Extensions\UsesDefaultQueue;
 /**
  * Command Bus.
  *
- * @author  Łukasz Sitnicki <lukasz.sitnicki@movecloser.pl>
- * @version 1.0.0
+ * @author  Łukasz Sitnicki <lukasz.sitnicki@gmail.com>
  * @licence MIT
  * @link    https://github.com/mr-luke/bus
  * @package Mrluke\Bus
@@ -23,7 +22,7 @@ class CommandBus extends SingleHandlerBus implements CommandBusContract, HasAsyn
 {
     use UsesDefaultQueue;
 
-    /** Determine if process should be delete on success.
+    /** Determine if process should be deleted on success.
      *
      * @var bool
      */

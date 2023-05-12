@@ -10,7 +10,6 @@ use Mrluke\Bus\Contracts\HandlerResult as Contract;
  * Database implementation of ProcessRepository
  *
  * @author  Krzysztof Ustowski <krzysztof.ustowski@movecloser.pl>
- * @version 1.0.0
  * @licence MIT
  * @link    https://github.com/mr-luke/bus
  * @package Mrluke\Bus
@@ -26,7 +25,7 @@ class HandlerResult implements Contract
     /**
      * @var mixed|null
      */
-    protected $data;
+    protected mixed $data;
 
     /**
      * @var string|null
@@ -36,14 +35,14 @@ class HandlerResult implements Contract
     /**
      * HandlerResult constructor.
      *
-     * @param string|null    $feedback
-     * @param mixed|null $data
-     * @param array|null     $related
+     * @param string|null $feedback
+     * @param mixed|null  $data
+     * @param array|null  $related
      */
     public function __construct(
         ?string $feedback = null,
-        $data = null,
-        ?array $related = null
+        mixed   $data = null,
+        ?array  $related = null
     ) {
         $this->data     = $data;
         $this->related  = $related;
@@ -53,7 +52,7 @@ class HandlerResult implements Contract
     /**
      * @inheritDoc
      */
-    public function getData()
+    public function getData(): mixed
     {
         return $this->data;
     }

@@ -15,8 +15,8 @@ class ProcessTest extends TestCase
     public function testIfReturnsValidStatus()
     {
         $this->assertEquals(
-            Process::verifyStatus(ProcessContract::New),
-            ProcessContract::New
+            Process::verifyStatus(ProcessContract::NEW),
+            ProcessContract::NEW
         );
     }
 
@@ -31,14 +31,14 @@ class ProcessTest extends TestCase
     {
         $this->expectException(InvalidAction::class);
 
-        Process::verifySubStatus(ProcessContract::Finished);
+        Process::verifySubStatus(ProcessContract::FINISHED);
     }
 
     public function testIfReturnsValidSubStatus()
     {
         $this->assertEquals(
-            Process::verifySubStatus(ProcessContract::Succeed),
-            ProcessContract::Succeed
+            Process::verifySubStatus(ProcessContract::SUCCEED),
+            ProcessContract::SUCCEED
         );
     }
 
@@ -48,7 +48,7 @@ class ProcessTest extends TestCase
             'id',
             'bus',
             'Process',
-            ProcessContract::New,
+            ProcessContract::NEW,
             1,
             ['Handler'],
             null,
@@ -75,7 +75,7 @@ class ProcessTest extends TestCase
             'id',
             'bus',
             'Process',
-            ProcessContract::New,
+            ProcessContract::NEW,
             1,
             ['Handler'],
             null,
@@ -90,7 +90,7 @@ class ProcessTest extends TestCase
                 'id'          => 'id',
                 'bus'         => 'bus',
                 'process'     => 'Process',
-                'status'      => ProcessContract::New,
+                'status'      => ProcessContract::NEW,
                 'handlers'    => 1,
                 'results'     => ['Handler'],
                 'related'     => null,
@@ -112,9 +112,9 @@ class ProcessTest extends TestCase
             'id',
             'bus',
             'Process',
-            ProcessContract::New,
+            ProcessContract::NEW,
             1,
-            [$handlerName => ['status' => ProcessContract::New]],
+            [$handlerName => ['status' => ProcessContract::NEW]],
             null,
             null,
             null,
@@ -123,8 +123,8 @@ class ProcessTest extends TestCase
         );
 
         $this->assertEquals(
-            [$handlerName => ['status' => ProcessContract::Succeed]],
-            $process->applyResult($handlerName, ProcessContract::Succeed)
+            [$handlerName => ['status' => ProcessContract::SUCCEED]],
+            $process->applyResult($handlerName, ProcessContract::SUCCEED)
         );
     }
 
@@ -137,9 +137,9 @@ class ProcessTest extends TestCase
             'id',
             'bus',
             'Process',
-            ProcessContract::New,
+            ProcessContract::NEW,
             1,
-            [$handlerName => ['status' => ProcessContract::New]],
+            [$handlerName => ['status' => ProcessContract::NEW]],
             null,
             null,
             null,
@@ -147,7 +147,7 @@ class ProcessTest extends TestCase
             $this->buildCarbonMock()
         );
 
-        $process->applyResult('BadHandler', ProcessContract::Succeed);
+        $process->applyResult('BadHandler', ProcessContract::SUCCEED);
     }
 
     public function testIfIsSuccessfulMethodReturnsFalseWhenProcessIsNotFinished()
@@ -156,9 +156,9 @@ class ProcessTest extends TestCase
             'id',
             'bus',
             'Process',
-            ProcessContract::New,
+            ProcessContract::NEW,
             1,
-            ['Handler' => ['status' => ProcessContract::New]],
+            ['Handler' => ['status' => ProcessContract::NEW]],
             null,
             null,
             null,
@@ -173,15 +173,15 @@ class ProcessTest extends TestCase
     {
         $carbon = $this->buildCarbonMock();
         $results = [
-            'Handler'  => ['status' => ProcessContract::Failed, 'message' => 'Failed'],
-            'Handler2' => ['status' => ProcessContract::Succeed]
+            'Handler'  => ['status' => ProcessContract::FAILED, 'message' => 'Failed'],
+            'Handler2' => ['status' => ProcessContract::SUCCEED]
         ];
 
         $process = new Process(
             'id',
             'bus',
             'Process',
-            ProcessContract::Finished,
+            ProcessContract::FINISHED,
             count($results),
             $results,
             null,
@@ -200,15 +200,15 @@ class ProcessTest extends TestCase
     {
         $carbon = $this->buildCarbonMock();
         $results = [
-            'Handler'  => ['status' => ProcessContract::Succeed],
-            'Handler2' => ['status' => ProcessContract::Succeed]
+            'Handler'  => ['status' => ProcessContract::SUCCEED],
+            'Handler2' => ['status' => ProcessContract::SUCCEED]
         ];
 
         $process = new Process(
             'id',
             'bus',
             'Process',
-            ProcessContract::Finished,
+            ProcessContract::FINISHED,
             count($results),
             $results,
             null,
@@ -227,15 +227,15 @@ class ProcessTest extends TestCase
     {
         $carbon = $this->buildCarbonMock();
         $results = [
-            'Handler'  => ['status' => ProcessContract::Succeed],
-            'Handler2' => ['status' => ProcessContract::Pending]
+            'Handler'  => ['status' => ProcessContract::SUCCEED],
+            'Handler2' => ['status' => ProcessContract::PENDING]
         ];
 
         $process = new Process(
             'id',
             'bus',
             'Process',
-            ProcessContract::Pending,
+            ProcessContract::PENDING,
             count($results),
             $results,
             null,
@@ -252,16 +252,16 @@ class ProcessTest extends TestCase
     {
         $carbon = $this->buildCarbonMock();
         $results = [
-            'Handler'  => ['status' => ProcessContract::Succeed],
-            'Handler2' => ['status' => ProcessContract::Failed],
-            'Handler3' => ['status' => ProcessContract::Succeed]
+            'Handler'  => ['status' => ProcessContract::SUCCEED],
+            'Handler2' => ['status' => ProcessContract::FAILED],
+            'Handler3' => ['status' => ProcessContract::SUCCEED]
         ];
 
         $process = new Process(
             'id',
             'bus',
             'Process',
-            ProcessContract::Pending,
+            ProcessContract::PENDING,
             count($results),
             $results,
             null,
@@ -278,16 +278,16 @@ class ProcessTest extends TestCase
     {
         $carbon = $this->buildCarbonMock();
         $results = [
-            'Handler'  => ['status' => ProcessContract::New],
-            'Handler2' => ['status' => ProcessContract::New],
-            'Handler3' => ['status' => ProcessContract::New]
+            'Handler'  => ['status' => ProcessContract::NEW],
+            'Handler2' => ['status' => ProcessContract::NEW],
+            'Handler3' => ['status' => ProcessContract::NEW]
         ];
 
         $process = new Process(
             'id',
             'bus',
             'Process',
-            ProcessContract::Canceled,
+            ProcessContract::CANCELED,
             count($results),
             $results,
             null,
@@ -304,16 +304,16 @@ class ProcessTest extends TestCase
     {
         $carbon = $this->buildCarbonMock();
         $results = [
-            'Handler'  => ['status' => ProcessContract::Pending],
-            'Handler2' => ['status' => ProcessContract::New],
-            'Handler3' => ['status' => ProcessContract::New]
+            'Handler'  => ['status' => ProcessContract::PENDING],
+            'Handler2' => ['status' => ProcessContract::NEW],
+            'Handler3' => ['status' => ProcessContract::NEW]
         ];
 
         $process = new Process(
             'id',
             'bus',
             'Process',
-            ProcessContract::Pending,
+            ProcessContract::PENDING,
             count($results),
             $results,
             null,
@@ -330,16 +330,16 @@ class ProcessTest extends TestCase
     {
         $carbon = $this->buildCarbonMock();
         $results = [
-            'Handler'  => ['status' => ProcessContract::New],
-            'Handler2' => ['status' => ProcessContract::New],
-            'Handler3' => ['status' => ProcessContract::New]
+            'Handler'  => ['status' => ProcessContract::NEW],
+            'Handler2' => ['status' => ProcessContract::NEW],
+            'Handler3' => ['status' => ProcessContract::NEW]
         ];
 
         $process = new Process(
             'id',
             'bus',
             'Process',
-            ProcessContract::New,
+            ProcessContract::NEW,
             count($results),
             $results,
             null,
@@ -358,14 +358,14 @@ class ProcessTest extends TestCase
 
         $carbon = $this->buildCarbonMock();
         $results = [
-            'Handler' => ['status' => ProcessContract::New]
+            'Handler' => ['status' => ProcessContract::NEW]
         ];
 
         $process = new Process(
             'id',
             'bus',
             'Process',
-            ProcessContract::New,
+            ProcessContract::NEW,
             count($results),
             $results,
             null,
@@ -382,7 +382,7 @@ class ProcessTest extends TestCase
     {
         $carbon = $this->buildCarbonMock();
 
-        $handlerResult = ['status' => ProcessContract::New];
+        $handlerResult = ['status' => ProcessContract::NEW];
         $results = [
             'Handler' => $handlerResult
         ];
@@ -391,7 +391,7 @@ class ProcessTest extends TestCase
             'id',
             'bus',
             'Process',
-            ProcessContract::New,
+            ProcessContract::NEW,
             count($results),
             $results,
             null,

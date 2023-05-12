@@ -32,8 +32,7 @@ use Mrluke\Bus\Extensions\TranslateResults;
 /**
  * Abstract for single handler Bus.
  *
- * @author  Łukasz Sitnicki <lukasz.sitnicki@movecloser.pl>
- * @version 1.0.0
+ * @author  Łukasz Sitnicki <lukasz.sitnicki@gmail.com>
  * @licence MIT
  * @link    https://github.com/mr-luke/bus
  * @package Mrluke\Bus
@@ -456,7 +455,7 @@ abstract class SingleHandlerBus implements Bus
             $this->processRepository->applySubResult(
                 $process,
                 get_class($handler),
-                Process::Succeed,
+                Process::SUCCEED,
                 $this->processResult($result)
             );
 
@@ -465,7 +464,7 @@ abstract class SingleHandlerBus implements Bus
             $this->processRepository->applySubResult(
                 $process,
                 get_class($handler),
-                Process::Failed,
+                Process::FAILED,
                 $this->processResult($e->getMessage())
             );
 

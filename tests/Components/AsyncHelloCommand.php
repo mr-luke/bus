@@ -9,27 +9,26 @@ use Mrluke\Bus\Contracts\ShouldBeAsync;
 /**
  * Class HelloCommand
  *
- * @author  Łukasz Sitnicki <lukasz.sitnicki@movecloser.pl>
- * @version 1.0.0
+ * @author  Łukasz Sitnicki <lukasz.sitnicki@gmail.com>
  * @package Tests\Components
  * @codeCoverageIgnore
  */
 class AsyncHelloCommand implements Command, ShouldBeAsync
 {
     /**
-     * @var int
+     * @var \Carbon\Carbon|int
      */
-    public $delay;
+    public Carbon|int $delay;
 
     /**
      * @var string
      */
-    public $greeting;
+    public string $greeting;
 
     /**
      * @var string
      */
-    public $queue = 'custom';
+    public string $queue = 'custom';
 
     public function __construct(string $greeting)
     {

@@ -9,8 +9,7 @@ use Mrluke\Bus\MultipleHandlerBus;
 /**
  * Class SyncBus
  *
- * @author  Łukasz Sitnicki <lukasz.sitnicki@movecloser.pl>
- * @version 1.0.0
+ * @author  Łukasz Sitnicki <lukasz.sitnicki@gmail.com>
  * @licence MIT
  * @package Tests\Components
  * @codeCoverageIgnore

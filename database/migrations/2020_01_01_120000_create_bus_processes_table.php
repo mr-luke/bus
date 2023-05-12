@@ -6,27 +6,24 @@ use Illuminate\Database\Migrations\Migration;
 
 use Mrluke\Bus\Contracts\Config;
 use Mrluke\Bus\Contracts\Process;
+use Mrluke\Configuration\Host;
 
 /**
  * Class CreateBusProcessesTable
  *
- * @author  Łukasz Sitnicki <lukasz.sitnicki@movecloser.pl>
- * @version 1.0.0
+ * @author  Łukasz Sitnicki <lukasz.sitnicki@gmail.pl>
  * @licence MIT
  * @link    https://github.com/mr-luke/bus
  */
-class CreateBusProcessesTable extends Migration
+return new class extends Migration
 {
     /**
      * Instance of EventStore.
      *
-     * @var Config
+     * @var \Mrluke\Configuration\Host
      */
-    protected $config;
+    protected Host $config;
 
-    /**
-     * @throws \Illuminate\Contracts\Container\BindingResolutionException
-     */
     public function __construct()
     {
         $this->config = app()->make(Config::class);
@@ -37,7 +34,7 @@ class CreateBusProcessesTable extends Migration
      *
      * @return void
      */
-    public function up()
+    public function up(): void
     {
         Schema::create(
             $this->config->get('table'),
@@ -48,12 +45,12 @@ class CreateBusProcessesTable extends Migration
                 $table->enum(
                     'status',
                     [
-                        Process::New,
-                        Process::Pending,
-                        Process::Finished,
-                        Process::Canceled
+                        Process::NEW,
+                        Process::PENDING,
+                        Process::FINISHED,
+                        Process::CANCELED
                     ]
-                )->default(Process::New);
+                )->default(Process::NEW);
                 $table->unsignedInteger('handlers')->default(1);
                 $table->json('results')->nullable();
                 $table->unsignedMediumInteger('pid')->nullable();
@@ -77,7 +74,7 @@ class CreateBusProcessesTable extends Migration
      *
      * @return void
      */
-    public function down()
+    public function down(): void
     {
         if ($this->config->get('users.table')) {
             Schema::table(
@@ -92,4 +89,4 @@ class CreateBusProcessesTable extends Migration
 
         Schema::dropIfExists($this->config->get('table'));
     }
-}
+};
