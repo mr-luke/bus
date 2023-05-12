@@ -17,7 +17,7 @@ use Mrluke\Bus\Contracts\Process;
 use Mrluke\Bus\Contracts\ProcessRepository;
 use Mrluke\Bus\Exceptions\MissingConfiguration;
 use Mrluke\Bus\HandlerResult;
-use RuntimeException;
+use Mrluke\Bus\Exceptions\RuntimeException;
 use Tests\AppCase;
 use Tests\Components\AsyncHelloCommand;
 use Tests\Components\DependencyErrorHandler;
