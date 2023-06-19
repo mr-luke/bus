@@ -11,8 +11,6 @@ use Mrluke\Bus\Contracts\Process;
 use Mrluke\Bus\Extensions\UsesDefaultQueue;
 
 /**
- * Command Bus.
- *
  * @author  Łukasz Sitnicki <lukasz.sitnicki@gmail.com>
  * @licence MIT
  * @link    https://github.com/mr-luke/bus

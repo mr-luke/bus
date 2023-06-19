@@ -15,8 +15,6 @@ use Mrluke\Bus\Exceptions\RuntimeException;
 use Mrluke\Configuration\Contracts\ArrayHost;
 
 /**
- * Database implementation of ProcessRepository
- *
  * @author  Łukasz Sitnicki <lukasz.sitnicki@gmail.com>
  * @author  Krzysztof Ustowski <krzysztof.ustowski@movecloser.pl>
  * @licence MIT

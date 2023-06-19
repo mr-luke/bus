@@ -7,8 +7,6 @@ namespace Mrluke\Bus;
 use Mrluke\Bus\Contracts\HandlerResult as Contract;
 
 /**
- * Database implementation of ProcessRepository
- *
  * @author  Krzysztof Ustowski <krzysztof.ustowski@movecloser.pl>
  * @licence MIT
  * @link    https://github.com/mr-luke/bus

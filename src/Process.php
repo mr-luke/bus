@@ -17,8 +17,6 @@ use Mrluke\Bus\Exceptions\MissingHandler;
 use stdClass;
 
 /**
- * Class Process
- *
  * @author  Łukasz Sitnicki <lukasz.sitnicki@gmail.com>
  * @author  Krzysztof Ustowski <krzysztof.ustowski@movecloser.pl>
  * @licence MIT
