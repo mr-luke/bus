@@ -7,11 +7,9 @@ namespace Mrluke\Bus;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Query\Builder;
-use Illuminate\Support\Str;
-use Mrluke\Bus\Contracts\HandlerResult;
+use Mrluke\Bus\Contracts\InteractsWithRepository;
 use Mrluke\Bus\Contracts\Process;
 use Mrluke\Bus\Contracts\ProcessRepository;
-use Mrluke\Bus\Exceptions\InvalidAction;
 use Mrluke\Bus\Exceptions\MissingProcess;
 use Mrluke\Bus\Exceptions\RuntimeException;
 use Mrluke\Configuration\Contracts\ArrayHost;
@@ -61,64 +59,6 @@ class DatabaseProcessRepository implements ProcessRepository
     /**
      * @inheritDoc
      */
-    public function applySubResult(
-        Process|string $processId,
-        string         $handler,
-        string         $status,
-        HandlerResult  $result
-    ): Process {
-        $process = is_string($processId) ? $this->find($processId) : $processId;
-
-        $payload = [
-            'results' => $process->applyResult($handler, $status, $result->getFeedback()),
-            'related' => $process->applyRelated($result->getRelated()),
-            'data' => $process->applyData($result->getData()),
-            'status' => $process->status()
-        ];
-
-        if (!is_null($payload['data'])) {
-            $payload['data'] = array_filter($payload['data'], function($item) {
-                return serialize($item);
-            });
-        }
-
-        foreach ($payload as $k => $v) {
-            if (in_array($k, ['results', 'data', 'related']) && !is_null($v)) {
-                $payload[$k] = json_encode($v);
-            }
-        }
-
-        $this->getBuilder()->where('id', $process->id())->update($payload);
-
-        return $process;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function cancel(Process|string $processId): Process
-    {
-        $process = is_string($processId) ? $this->find($processId) : $processId;
-
-        if ($process->isPending() || $process->isFinished()) {
-            throw new InvalidAction(
-                sprintf('Cannot cancel touched process [%s]', $process->id())
-            );
-        }
-
-        $this->getBuilder()->where('id', $process->id())->update(
-            [
-                'finished_at' => $process->cancel(),
-                'status' => $process->status()
-            ]
-        );
-
-        return $process;
-    }
-
-    /**
-     * @inheritDoc
-     */
     public function count(string $status = null): int
     {
         $query = $this->getBuilder();
@@ -128,39 +68,6 @@ class DatabaseProcessRepository implements ProcessRepository
         }
 
         return $query->count();
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function create(string $busName, string $process, array $handlers): Process
-    {
-        if (empty($handlers)) {
-            throw new InvalidAction('Cannot create process with no handlers');
-        }
-
-        $process = \Mrluke\Bus\Process::create(
-            $busName,
-            $process,
-            $handlers,
-            $this->guard->id()
-        );
-
-        $payload = [];
-        foreach ($process->toArray() as $k => $v) {
-            $payload[Str::snake($k)] = $v;
-
-            if (in_array($k, ['results', 'data', 'related']) && !is_null($payload[$k])) {
-                $payload[$k] = json_encode($payload[$k]);
-            }
-        }
-
-
-        if (!$this->getBuilder()->insert($payload)) {
-            throw new RuntimeException('Creating new process failed.');
-        }
-
-        return $process;
     }
 
     /**
@@ -176,7 +83,17 @@ class DatabaseProcessRepository implements ProcessRepository
     /**
      * @inheritDoc
      */
-    public function find(string $processId): Process
+    public function persist(InteractsWithRepository $process): void
+    {
+        $process->beenPersisted()
+            ? $this->updateProcess($process)
+            : $this->storeProcess($process);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function retrieve(string $processId): Process
     {
         $model = $this->getBuilder()->find($processId);
 
@@ -190,49 +107,34 @@ class DatabaseProcessRepository implements ProcessRepository
     }
 
     /**
-     * @inheritDoc
+     * @throws \Mrluke\Bus\Exceptions\RuntimeException
      */
-    public function finish(Process|string $processId): Process
+    protected function storeProcess(InteractsWithRepository $process): void
     {
-        $process = is_string($processId) ? $this->find($processId) : $processId;
+        $payload = $process->toDatabase();
 
-        if ($process->isFinished()) {
-            throw new InvalidAction(
-                sprintf('Trying to finish already finished process [%s].', $process->id())
-            );
+        if (!$this->getBuilder()->insert($payload)) {
+            throw new RuntimeException('Creating new process failed.');
         }
 
-        $this->getBuilder()->where('id', $process->id())->update(
-            [
-                'finished_at' => $process->finish(),
-                'status' => $process->status()
-            ]
-        );
-
-        return $process;
+        $process->markAsPersisted();
     }
 
     /**
-     * @inheritDoc
+     * @throws \Mrluke\Bus\Exceptions\RuntimeException
      */
-    public function start(Process|string $processId): Process
+    protected function updateProcess(InteractsWithRepository $process): void
     {
-        $process = is_string($processId) ? $this->find($processId) : $processId;
+        $payload = $process->toDatabase();
 
-        if ($process->isPending()) {
-            throw new InvalidAction(
-                sprintf('Process [%s] already started.', $process->id())
-            );
+        $toTrim = ['bus', 'committed_at', 'committed_by', 'handlers', 'id', 'pid', 'process'];
+        foreach ($toTrim as $key) {
+            unset($payload[$key]);
         }
 
-        $this->getBuilder()->where('id', $process->id())->update(
-            [
-                'started_at' => $process->start(),
-                'status' => $process->status()
-            ]
-        );
-
-        return $process;
+        if(!$this->getBuilder()->where('id', $process->id())->update($payload)) {
+            throw new RuntimeException('Updating the process failed.');
+        }
     }
 
     /**

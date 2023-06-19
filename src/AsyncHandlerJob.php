@@ -15,6 +15,7 @@ use Mrluke\Bus\Contracts\Process as ProcessContract;
 use Mrluke\Bus\Contracts\ProcessRepository;
 use Mrluke\Bus\Extensions\ResolveDependencies;
 use Mrluke\Bus\Extensions\TranslateResults;
+use Throwable;
 
 class AsyncHandlerJob implements ShouldQueue
 {
@@ -82,6 +83,7 @@ class AsyncHandlerJob implements ShouldQueue
      * @throws \Mrluke\Bus\Exceptions\InvalidAction
      * @throws \Mrluke\Bus\Exceptions\MissingHandler
      * @throws \Mrluke\Bus\Exceptions\MissingProcess
+     * @throws \Mrluke\Bus\Exceptions\RuntimeException
      * @throws \ReflectionException
      */
     public function handle(
@@ -90,19 +92,19 @@ class AsyncHandlerJob implements ShouldQueue
         Logger            $logger
     ): void {
         $handler = $this->resolveClass($container, $this->handlerClass);
-        $process = $repository->find($this->processId);
+        $process = $repository->retrieve($this->processId);
 
         try {
             if (!$process->isPending()) {
-                $repository->start($process);
+                $process->start();
+                $repository->persist($process);
             }
 
             $result = $this->processResult(
                 $handler->handle($this->instruction)
             );
 
-            $repository->applySubResult(
-                $process,
+            $process->applyHandlerResult(
                 $this->handlerClass,
                 ProcessContract::SUCCEED,
                 $result
@@ -119,8 +121,8 @@ class AsyncHandlerJob implements ShouldQueue
 
         } catch (Exception $e) {
             $logger->error($e);
-            $repository->applySubResult(
-                $process,
+
+            $process->applyHandlerResult(
                 $this->handlerClass,
                 ProcessContract::FAILED,
                 new HandlerResult($e->getMessage())
@@ -128,24 +130,30 @@ class AsyncHandlerJob implements ShouldQueue
         }
 
         if ($process->qualifyAsFinished()) {
-            $repository->finish($process);
+            $process->finish();
 
             $logger->debug('Process finished.', ['process' => $this->processId]);
         }
+
+        $repository->persist($process);
     }
 
     /**
-     * @param \Exception $e
+     * @param \Throwable $e
      *
      * @throws \Illuminate\Contracts\Container\BindingResolutionException
+     * @throws \Mrluke\Bus\Exceptions\InvalidAction
+     * @throws \Mrluke\Bus\Exceptions\MissingHandler
+     * @throws \Mrluke\Bus\Exceptions\MissingProcess
      */
-    public function failed(Exception $e): void
+    public function failed(Throwable $e): void
     {
+        /* @var \Mrluke\Bus\Contracts\ProcessRepository $repository */
         $repository = app()->make(ProcessRepository::class);
-        $process = $repository->find($this->processId);
 
-        $repository->applySubResult(
-            $process,
+        $process = $repository->retrieve($this->processId);
+
+        $process->applyHandlerResult(
             $this->handlerClass,
             ProcessContract::FAILED,
             new HandlerResult(
@@ -154,8 +162,10 @@ class AsyncHandlerJob implements ShouldQueue
         );
 
         if ($process->qualifyAsFinished()) {
-            $repository->finish($process);
+            $process->finish();
         }
+
+        $repository->persist($process);
     }
 
     /**

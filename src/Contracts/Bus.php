@@ -26,6 +26,7 @@ interface Bus
      * @throws \Mrluke\Bus\Exceptions\MissingHandler
      * @throws \Mrluke\Bus\Exceptions\MissingProcess
      * @throws \Illuminate\Contracts\Container\BindingResolutionException
+     * @throws \Mrluke\Bus\Exceptions\RuntimeException
      * @throws \ReflectionException
      */
     public function dispatch(Instruction $instruction, Trigger $trigger = null): ?Process;
@@ -42,6 +43,7 @@ interface Bus
      * @throws \Mrluke\Bus\Exceptions\MissingHandler
      * @throws \Mrluke\Bus\Exceptions\MissingProcess
      * @throws \Illuminate\Contracts\Container\BindingResolutionException
+     * @throws \Mrluke\Bus\Exceptions\RuntimeException
      * @throws \ReflectionException
      */
     public function dispatchMultiple(

@@ -19,10 +19,12 @@ class ProcessTest extends TestCase
     public function testIfCancelSetsCorrectStatusWithTimestamp()
     {
         $carbon = $this->buildCarbonMock();
+
+        $handlers = ['Handler', 'Handler2', 'Handler3'];
         $results = [
-            'Handler'  => ['status' => ProcessContract::NEW],
-            'Handler2' => ['status' => ProcessContract::NEW],
-            'Handler3' => ['status' => ProcessContract::NEW]
+            ['status' => ProcessContract::NEW],
+            ['status' => ProcessContract::NEW],
+            ['status' => ProcessContract::NEW]
         ];
 
         $process = new Process(
@@ -30,18 +32,20 @@ class ProcessTest extends TestCase
             'bus',
             'Process',
             ProcessContract::NEW,
-            count($results),
+            $handlers,
+            1,
+            null,
+            $carbon,
+            null,
+            null,
             $results,
-            null,
-            null,
-            null,
-            null,
-            $carbon
         );
 
-        $finishedAt = $process->cancel();
+        $process->cancel();
 
-        $this->assertIsInt($finishedAt);
+        $finishedAt = $process->toArray()['finishedAt'];
+
+        $this->assertIsFloat($finishedAt);
         $this->assertEquals(ProcessContract::CANCELED, $process->status());
         $this->assertTrue(
             Carbon::createFromTimestampMs($finishedAt)->isSameMinute()
@@ -50,7 +54,7 @@ class ProcessTest extends TestCase
 
     public function testIfCreateThrowsWhenNoHandlerProvided()
     {
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(InvalidAction::class);
 
         Process::create('bus', 'Process', [], 1);
     }
@@ -78,9 +82,9 @@ class ProcessTest extends TestCase
                 'bus'         => 'bus',
                 'process'     => 'Process',
                 'status'      => ProcessContract::NEW,
-                'handlers'    => 1,
+                'handlers'    => ['Handler'],
                 'results'     => [
-                    'Handler' => ['status' => ProcessContract::NEW]
+                    ['status' => ProcessContract::NEW]
                 ],
                 'related'     => null,
                 'data'        => null,
@@ -97,10 +101,12 @@ class ProcessTest extends TestCase
         $this->expectException(InvalidAction::class);
 
         $carbon = $this->buildCarbonMock();
+
+        $handlers = ['Handler', 'Handler2', 'Handler3'];
         $results = [
-            'Handler'  => ['status' => ProcessContract::PENDING],
-            'Handler2' => ['status' => ProcessContract::NEW],
-            'Handler3' => ['status' => ProcessContract::NEW]
+            ['status' => ProcessContract::PENDING],
+            ['status' => ProcessContract::NEW],
+            ['status' => ProcessContract::NEW]
         ];
 
         $process = new Process(
@@ -108,13 +114,13 @@ class ProcessTest extends TestCase
             'bus',
             'Process',
             ProcessContract::PENDING,
-            count($results),
+            $handlers,
+            1,
+            null,
+            $carbon,
+            null,
+            null,
             $results,
-            null,
-            null,
-            null,
-            null,
-            $carbon
         );
 
         $process->finish();
@@ -123,10 +129,12 @@ class ProcessTest extends TestCase
     public function testIfFinishSetsCorrectStatusWhenProcessIsQualified()
     {
         $carbon = $this->buildCarbonMock();
+
+        $handlers = ['Handler', 'Handler2', 'Handler3'];
         $results = [
-            'Handler'  => ['status' => ProcessContract::SUCCEED],
-            'Handler2' => ['status' => ProcessContract::SUCCEED],
-            'Handler3' => ['status' => ProcessContract::FAILED]
+            ['status' => ProcessContract::SUCCEED],
+            ['status' => ProcessContract::SUCCEED],
+            ['status' => ProcessContract::FAILED]
         ];
 
         $process = new Process(
@@ -134,18 +142,20 @@ class ProcessTest extends TestCase
             'bus',
             'Process',
             ProcessContract::PENDING,
-            count($results),
+            $handlers,
+            1,
+            null,
+            $carbon,
+            null,
+            null,
             $results,
-            null,
-            null,
-            null,
-            null,
-            $carbon
         );
 
-        $finishedAt = $process->finish();
+        $process->finish();
 
-        $this->assertIsInt($finishedAt);
+        $finishedAt = $process->toArray()['finishedAt'];
+
+        $this->assertIsFloat($finishedAt);
         $this->assertEquals(ProcessContract::FINISHED, $process->status());
         $this->assertTrue(
             Carbon::createFromTimestampMs($finishedAt)->isSameMinute()
@@ -161,8 +171,8 @@ class ProcessTest extends TestCase
         $model->bus = 'bus';
         $model->process = 'Process';
         $model->status = ProcessContract::NEW;
-        $model->handlers = 1;
-        $model->results = '{"Handler":{"status":"' . ProcessContract::NEW . '"}}';
+        $model->handlers = '["handler"]';
+        $model->results = '[{"status":"' . ProcessContract::NEW . '"}]';
         $model->data = null;
         $model->related = null;
         $model->pid = 123;
@@ -190,9 +200,9 @@ class ProcessTest extends TestCase
                 'bus'         => 'bus',
                 'process'     => 'Process',
                 'status'      => ProcessContract::PENDING,
-                'handlers'    => 1,
+                'handlers'    => [self::HandlerName],
                 'results'     => [
-                    self::HandlerName => ['status' => ProcessContract::PENDING]
+                     ['status' => ProcessContract::PENDING]
                 ],
                 'related'     => null,
                 'data'        => null,
@@ -211,10 +221,12 @@ class ProcessTest extends TestCase
         $this->expectException(InvalidAction::class);
 
         $carbon = $this->buildCarbonMock();
+
+        $handlers = ['Handler', 'Handler2', 'Handler3'];
         $results = [
-            'Handler'  => ['status' => ProcessContract::SUCCEED],
-            'Handler2' => ['status' => ProcessContract::NEW],
-            'Handler3' => ['status' => ProcessContract::NEW]
+            ['status' => ProcessContract::SUCCEED],
+            ['status' => ProcessContract::NEW],
+            ['status' => ProcessContract::NEW]
         ];
 
         $process = new Process(
@@ -222,13 +234,13 @@ class ProcessTest extends TestCase
             'bus',
             'Process',
             ProcessContract::PENDING,
-            count($results),
+            $handlers,
+            null,
+            null,
+            $carbon,
+            null,
+            null,
             $results,
-            null,
-            null,
-            null,
-            null,
-            $carbon
         );
 
         $process->start();
@@ -237,10 +249,12 @@ class ProcessTest extends TestCase
     public function testIfStartSetsCorrectStatusWhenProcessQualifyToStart()
     {
         $carbon = $this->buildCarbonMock();
+
+        $handlers = ['Handler', 'Handler2', 'Handler3'];
         $results = [
-            'Handler'  => ['status' => ProcessContract::NEW],
-            'Handler2' => ['status' => ProcessContract::NEW],
-            'Handler3' => ['status' => ProcessContract::NEW]
+            ['status' => ProcessContract::NEW],
+            ['status' => ProcessContract::NEW],
+            ['status' => ProcessContract::NEW]
         ];
 
         $process = new Process(
@@ -248,18 +262,20 @@ class ProcessTest extends TestCase
             'bus',
             'Process',
             ProcessContract::NEW,
-            count($results),
+            $handlers,
+            null,
+            null,
+            $carbon,
+            null,
+            null,
             $results,
-            null,
-            null,
-            null,
-            null,
-            $carbon
         );
 
-        $startedAt = $process->start();
+        $process->start();
 
-        $this->assertIsInt($startedAt);
+        $startedAt = $process->toArray()['startedAt'];
+
+        $this->assertIsFloat($startedAt);
         $this->assertEquals(ProcessContract::PENDING, $process->status());
         $this->assertTrue(
             Carbon::createFromTimestampMs($startedAt)->isSameMinute()
@@ -282,8 +298,8 @@ class ProcessTest extends TestCase
         $model->bus = 'bus';
         $model->process = 'Process';
         $model->status = $status;
-        $model->handlers = 1;
-        $model->results = '{"' . self::HandlerName . '":{"status":"' . $status . '"}}';
+        $model->handlers = '["'. self::HandlerName .'"]';
+        $model->results = '[{"status":"' . $status . '"}]';
         $model->related = null;
         $model->data = null;
         $model->pid = 12345;

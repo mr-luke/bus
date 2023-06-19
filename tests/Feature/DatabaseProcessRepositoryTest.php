@@ -2,18 +2,15 @@
 
 namespace Tests\Feature;
 
-use Exception;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Database\Connection;
 use Illuminate\Database\Query\Builder;
-use Mrluke\Bus\HandlerResult;
-use Mrluke\Configuration\Contracts\ArrayHost;
-use PHPUnit\Framework\TestCase;
-
 use Mrluke\Bus\Contracts\Process;
 use Mrluke\Bus\DatabaseProcessRepository;
-use Mrluke\Bus\Exceptions\InvalidAction;
 use Mrluke\Bus\Exceptions\MissingProcess;
+use Mrluke\Bus\Exceptions\RuntimeException;
+use Mrluke\Configuration\Contracts\ArrayHost;
+use PHPUnit\Framework\TestCase;
 
 class DatabaseProcessRepositoryTest extends TestCase
 {
@@ -41,7 +38,7 @@ class DatabaseProcessRepositoryTest extends TestCase
             $this->getMockBuilder(Guard::class)->getMock()
         );
 
-        $repository->find($id);
+        $repository->retrieve($id);
     }
 
     public function testIfFindReturnsCorrectInstanceOfProcess()
@@ -54,7 +51,7 @@ class DatabaseProcessRepositoryTest extends TestCase
             $this->getMockBuilder(Guard::class)->getMock()
         );
 
-        $process = $repository->find(self::ExistingId);
+        $process = $repository->retrieve(self::ExistingId);
 
         $this->assertInstanceOf(
             Process::class,
@@ -64,107 +61,59 @@ class DatabaseProcessRepositoryTest extends TestCase
         $this->assertEquals(self::ExistingId, $process->id());
     }
 
-    public function testIfApplySubResultSetsHandlerStatusCorrectly()
+    public function testIfPersistStoresNewProcess()
     {
-        $feedback = 'Test message';
-
-        $builder = $this->buildBuilderMockWithFind(self::ExistingId);
-        /* @var \PHPUnit\Framework\MockObject\MockObject $builder */
-        $builder->expects($this->once())
-            ->method('where')
-            ->with('id', self::ExistingId)
-            ->willReturnSelf();
-
-        $builder->expects($this->once())
-            ->method('update')
-            ->withAnyParameters();
-
-        /* @var \Illuminate\Database\Query\Builder $builder */
-        $repository = new DatabaseProcessRepository(
-            $this->buildHostMock(2),
-            $this->buildConnectionMock($builder, 2),
-            $this->getMockBuilder(Guard::class)->getMock()
+        $process = new \Mrluke\Bus\Process(
+            'test-id',
+            'bus',
+            'TestProcess',
+            Process::NEW,
+            ['TestHandler'],
+            123,
+            null,
+            now()->toImmutable(),
         );
 
-        $process = $repository->applySubResult(
-            self::ExistingId,
-            ProcessTest::HandlerName,
-            Process::SUCCEED,
-            new HandlerResult($feedback)
-        );
-
-        $this->assertEquals(
-            [ProcessTest::HandlerName => ['status' => Process::SUCCEED, 'feedback' => $feedback]],
-            $process->toArray()['results']
-        );
-    }
-
-    public function testIfCancelThrowsOnPendingProcess()
-    {
-        $this->expectException(InvalidAction::class);
-
-        $builder = $this->buildBuilderMockWithFind(self::ExistingId);
-        $repository = new DatabaseProcessRepository(
-            $this->buildHostMock(),
-            $this->buildConnectionMock($builder),
-            $this->getMockBuilder(Guard::class)->getMock()
-        );
-
-        $repository->cancel(self::ExistingId);
-    }
-
-    public function testIfCancelSetsProperStatusToProcess()
-    {
-        $builder = $this->buildBuilderMockWithFind(self::ExistingId, Process::NEW);
-        /* @var \PHPUnit\Framework\MockObject\MockObject $builder */
-        $builder->expects($this->once())
-            ->method('where')
-            ->with('id', self::ExistingId)
-            ->willReturnSelf();
-
-        $builder->expects($this->once())
-            ->method('update')
-            ->withAnyParameters();
-
-        /* @var \Illuminate\Database\Query\Builder $builder */
-        $repository = new DatabaseProcessRepository(
-            $this->buildHostMock(2),
-            $this->buildConnectionMock($builder, 2),
-            $this->getMockBuilder(Guard::class)->getMock()
-        );
-
-        $process = $repository->cancel(self::ExistingId);
-
-        $this->assertEquals(
-            Process::CANCELED,
-            $process->status()
-        );
-    }
-
-    public function testIfCreateThrowsWhenNoHandlersProvided()
-    {
-        $this->expectException(InvalidAction::class);
+        $payload = $process->toDatabase();
 
         $builder = $this->buildBuilderMock();
+        /* @var \PHPUnit\Framework\MockObject\MockObject $builder */
+        $builder->expects($this->once())
+            ->method('insert')
+            ->with($payload)
+            ->willReturn(1);
+
+        /* @var \Illuminate\Database\Query\Builder $builder */
         $repository = new DatabaseProcessRepository(
-            $this->buildHostMock(0),
-            $this->buildConnectionMock($builder, 0),
+            $this->buildHostMock(1),
+            $this->buildConnectionMock($builder, 1),
             $this->getMockBuilder(Guard::class)->getMock()
         );
 
-        $repository->create('bus', 'Process', []);
+        $repository->persist($process);
     }
 
-    public function testIfCreateThrowsWhenCannotInsertToDB()
+    public function testIfThrowsWhenInsertFail()
     {
-        $this->expectException(Exception::class);
+        $this->expectException(RuntimeException::class);
+
+        $process = new \Mrluke\Bus\Process(
+            'test-id',
+            'bus',
+            'TestProcess',
+            Process::NEW,
+            ['TestHandler'],
+            123,
+            null,
+            now()->toImmutable(),
+        );
 
         $builder = $this->buildBuilderMock();
         /* @var \PHPUnit\Framework\MockObject\MockObject $builder */
         $builder->expects($this->once())
             ->method('insert')
             ->withAnyParameters()
-            ->willReturn(false);
+            ->willReturn(0);
 
         /* @var \Illuminate\Database\Query\Builder $builder */
         $repository = new DatabaseProcessRepository(
@@ -173,17 +122,94 @@ class DatabaseProcessRepositoryTest extends TestCase
             $this->getMockBuilder(Guard::class)->getMock()
         );
 
-        $repository->create('bus', 'Process', [ProcessTest::HandlerName]);
+        $repository->persist($process);
     }
 
-    public function testIfCreateReturnsProcessInstance()
+    public function testIfPersistUpdatesOldProcess()
     {
+        $process = new \Mrluke\Bus\Process(
+            'test-id',
+            'bus',
+            'TestProcess',
+            Process::NEW,
+            ['TestHandler'],
+            123,
+            null,
+            now()->toImmutable(),
+            null,
+            null,
+            [],
+            null,
+            null,
+            true,
+        );
+
+        $data = $process->toDatabase();
+        $payload = [
+            'data' => $data['data'],
+            'results' => $data['results'],
+            'related' => $data['related'],
+            'status' => $data['status'],
+            'started_at' => $data['started_at'],
+            'finished_at' => $data['finished_at'],
+        ];
+
         $builder = $this->buildBuilderMock();
         /* @var \PHPUnit\Framework\MockObject\MockObject $builder */
         $builder->expects($this->once())
-            ->method('insert')
+            ->method('where')
+            ->with('id', $data['id'])
+            ->willReturnSelf();
+
+        $builder->expects($this->once())
+            ->method('update')
+            ->with($payload)
+            ->willReturn(1);
+
+        /* @var \Illuminate\Database\Query\Builder $builder */
+        $repository = new DatabaseProcessRepository(
+            $this->buildHostMock(1),
+            $this->buildConnectionMock($builder, 1),
+            $this->getMockBuilder(Guard::class)->getMock()
+        );
+
+        $repository->persist($process);
+    }
+
+    public function testIfThrowsWhenUpdatesFail()
+    {
+        $this->expectException(RuntimeException::class);
+
+        $process = new \Mrluke\Bus\Process(
+            'test-id',
+            'bus',
+            'TestProcess',
+            Process::NEW,
+            ['TestHandler'],
+            123,
+            null,
+            now()->toImmutable(),
+            null,
+            null,
+            [],
+            null,
+            null,
+            true,
+        );
+
+        $data = $process->toDatabase();
+
+        $builder = $this->buildBuilderMock();
+        /* @var \PHPUnit\Framework\MockObject\MockObject $builder */
+        $builder->expects($this->once())
+            ->method('where')
+            ->with('id', $data['id'])
+            ->willReturnSelf();
+
+        $builder->expects($this->once())
+            ->method('update')
             ->withAnyParameters()
-            ->willReturn(true);
+            ->willReturn(0);
 
         /* @var \Illuminate\Database\Query\Builder $builder */
         $repository = new DatabaseProcessRepository(
@@ -192,104 +218,7 @@ class DatabaseProcessRepositoryTest extends TestCase
             $this->getMockBuilder(Guard::class)->getMock()
         );
 
-        $process = $repository->create('bus', 'Process', [ProcessTest::HandlerName]);
-
-        $this->assertInstanceOf(
-            Process::class,
-            $process
-        );
-    }
-
-    public function testIfFinishThrowsWhenAlreadyFinished()
-    {
-        $this->expectException(InvalidAction::class);
-
-        $builder = $this->buildBuilderMockWithFind(self::ExistingId, Process::FINISHED);
-        $repository = new DatabaseProcessRepository(
-            $this->buildHostMock(1),
-            $this->buildConnectionMock($builder, 1),
-            $this->getMockBuilder(Guard::class)->getMock()
-        );
-
-        $repository->finish(self::ExistingId);
-    }
-
-    public function testIfFinishSetsCorrectStatusOnProcess()
-    {
-        $process = ProcessTest::createCorrectModel(self::ExistingId);
-        $process->results = '{"' . ProcessTest::HandlerName . '":{"status":"' . Process::SUCCEED . '"}}';
-
-        $builder = $this->buildBuilderMock();
-        /* @var \PHPUnit\Framework\MockObject\MockObject $builder */
-        $builder->expects($this->once())
-            ->method('find')
-            ->with(self::ExistingId)
-            ->willReturn($process);
-
-        $builder->expects($this->once())
-            ->method('where')
-            ->with('id', self::ExistingId)
-            ->willReturnSelf();
-
-        $builder->expects($this->once())
-            ->method('update')
-            ->withAnyParameters();
-
-        /* @var \Illuminate\Database\Query\Builder $builder */
-        $repository = new DatabaseProcessRepository(
-            $this->buildHostMock(2),
-            $this->buildConnectionMock($builder, 2),
-            $this->getMockBuilder(Guard::class)->getMock()
-        );
-
-        $process = $repository->finish(self::ExistingId);
-
-        $this->assertEquals(
-            Process::FINISHED,
-            $process->status()
-        );
-    }
-
-    public function testIfStartThrowsWhenAlreadyPending()
-    {
-        $this->expectException(InvalidAction::class);
-
-        $builder = $this->buildBuilderMockWithFind(self::ExistingId);
-        $repository = new DatabaseProcessRepository(
-            $this->buildHostMock(1),
-            $this->buildConnectionMock($builder, 1),
-            $this->getMockBuilder(Guard::class)->getMock()
-        );
-
-        $repository->start(self::ExistingId);
-    }
-
-    public function testIfStartSetsProperStatusOnProcess()
-    {
-        $builder = $this->buildBuilderMockWithFind(self::ExistingId, Process::NEW);
-        /* @var \PHPUnit\Framework\MockObject\MockObject $builder */
-        $builder->expects($this->once())
-            ->method('where')
-            ->with('id', self::ExistingId)
-            ->willReturnSelf();
-
-        $builder->expects($this->once())
-            ->method('update')
-            ->withAnyParameters();
-
-        /* @var \Illuminate\Database\Query\Builder $builder */
-        $repository = new DatabaseProcessRepository(
-            $this->buildHostMock(2),
-            $this->buildConnectionMock($builder, 2),
-            $this->getMockBuilder(Guard::class)->getMock()
-        );
-
-        $process = $repository->start(self::ExistingId);
-
-        $this->assertEquals(
-            Process::PENDING,
-            $process->status()
-        );
+        $repository->persist($process);
     }
 
     /**

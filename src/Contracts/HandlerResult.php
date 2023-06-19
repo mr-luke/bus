@@ -3,8 +3,6 @@
 namespace Mrluke\Bus\Contracts;
 
 /**
- * Interface HandlerReslt
- *
  * @author  Krzysztof Ustowski <krzysztof.ustowski@movecloser.pl>
  * @licence MIT
  * @link    https://github.com/mr-luke/bus
@@ -15,21 +13,21 @@ interface HandlerResult
     /**
      * An array of related processes.
      *
-     * @return array | null
+     * @return array|null
      */
     public function getRelated(): ?array;
 
     /**
      * Complex object or data returned by handler.
      *
-     * @return mixed | null
+     * @return mixed|null
      */
     public function getData(): mixed;
 
     /**
      * Simpler string message returned by handler.
      *
-     * @return string | null
+     * @return string|null
      */
     public function getFeedback(): ?string;
 }
