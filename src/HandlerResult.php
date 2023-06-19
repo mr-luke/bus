@@ -7,8 +7,6 @@ namespace Mrluke\Bus;
 use Mrluke\Bus\Contracts\HandlerResult as Contract;
 
 /**
- * Database implementation of ProcessRepository
- *
  * @author  Krzysztof Ustowski <krzysztof.ustowski@movecloser.pl>
  * @licence MIT
  * @link    https://github.com/mr-luke/bus
@@ -16,22 +14,6 @@ use Mrluke\Bus\Contracts\HandlerResult as Contract;
  */
 class HandlerResult implements Contract
 {
-
-    /**
-     * @var array|null
-     */
-    protected ?array $related;
-
-    /**
-     * @var mixed|null
-     */
-    protected mixed $data;
-
-    /**
-     * @var string|null
-     */
-    protected ?string $feedback;
-
     /**
      * HandlerResult constructor.
      *
@@ -40,13 +22,11 @@ class HandlerResult implements Contract
      * @param array|null  $related
      */
     public function __construct(
-        ?string $feedback = null,
-        mixed   $data = null,
-        ?array  $related = null
+        protected readonly ?string $feedback = null,
+        protected readonly mixed   $data = null,
+        protected readonly ?array  $related = null
     ) {
-        $this->data     = $data;
-        $this->related  = $related;
-        $this->feedback = $feedback;
+        //
     }
 
     /**

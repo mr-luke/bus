@@ -10,8 +10,6 @@ use Mrluke\Bus\Exceptions\InvalidHandler;
 use Mrluke\Bus\Exceptions\MissingHandler;
 
 /**
- * Abstract for multi handlers Bus.
- *
  * @author  Łukasz Sitnicki <lukasz.sitnicki@gmail.com>
  * @licence MIT
  * @link    https://github.com/mr-luke/bus

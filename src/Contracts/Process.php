@@ -33,17 +33,33 @@ interface Process
      * Apply handler data object to process.
      *
      * @param mixed|null $data
-     * @return array|null
+     * @return void
      */
-    public function applyData(mixed $data): ?array;
+    public function applyData(mixed $data): void;
+
+    /**
+     * Apply result for given handler.
+     *
+     * @param string                              $handler
+     * @param string                              $status
+     * @param \Mrluke\Bus\Contracts\HandlerResult $result
+     * @return void
+     * @throws \Mrluke\Bus\Exceptions\InvalidAction
+     * @throws \Mrluke\Bus\Exceptions\MissingHandler
+     */
+    public function applyHandlerResult(
+        string        $handler,
+        string        $status,
+        HandlerResult $result
+    ): void;
 
     /**
      * Apply related processes to process.
      *
-     * @param array|null $related
-     * @return array|null
+     * @param array|string|null $related
+     * @return void
      */
-    public function applyRelated(?array $related): ?array;
+    public function applyRelated(array|string|null $related): void;
 
     /**
      * Apply result for given handler.
@@ -51,7 +67,7 @@ interface Process
      * @param string      $handler
      * @param string      $status
      * @param string|null $feedback
-     * @return array
+     * @return void
      * @throws \Mrluke\Bus\Exceptions\InvalidAction
      * @throws \Mrluke\Bus\Exceptions\MissingHandler
      */
@@ -59,14 +75,14 @@ interface Process
         string  $handler,
         string  $status,
         ?string $feedback = null
-    ): array;
+    ): void;
 
     /**
      * Mark process as canceled.
      *
-     * @return int
+     * @return void
      */
-    public function cancel(): int;
+    public function cancel(): void;
 
     /**
      * Create new process.
@@ -88,10 +104,10 @@ interface Process
     /**
      * Mark process as finished.
      *
-     * @return int
+     * @return void
      * @throws \Mrluke\Bus\Exceptions\InvalidAction
      */
-    public function finish(): int;
+    public function finish(): void;
 
     /**
      * Create instance from database model.
@@ -122,6 +138,13 @@ interface Process
      * @return bool
      */
     public function isPending(): bool;
+
+    /**
+     * Determine if process is finished with success.
+     *
+     * @return bool
+     */
+    public function isSuccessful(): bool;
 
     /**
      * Determine if process can be marked as finished.
@@ -170,10 +193,10 @@ interface Process
     /**
      * Mark process as started.
      *
-     * @return int
+     * @return void
      * @throws \Mrluke\Bus\Exceptions\InvalidAction
      */
-    public function start(): int;
+    public function start(): void;
 
     /**
      * Return actual status of the process.

@@ -16,8 +16,8 @@ use Mrluke\Bus\Contracts\Config;
 use Mrluke\Bus\Contracts\Process;
 use Mrluke\Bus\Contracts\ProcessRepository;
 use Mrluke\Bus\Exceptions\MissingConfiguration;
-use Mrluke\Bus\HandlerResult;
 use Mrluke\Bus\Exceptions\RuntimeException;
+use Mrluke\Bus\HandlerResult;
 use Tests\AppCase;
 use Tests\Components\AsyncHelloCommand;
 use Tests\Components\DependencyErrorHandler;
@@ -35,7 +35,9 @@ class LogicFlowTest extends AppCase
         $config = $this->app->make(Config::class);
         /* @var \Mrluke\Bus\Contracts\ProcessRepository $repository */
         $repository = $this->app->make(ProcessRepository::class);
-        $process = $repository->create('bus', HelloCommand::class, [HelloHandler::class]);
+
+        $process = \Mrluke\Bus\Process::create('bus', HelloCommand::class, [HelloHandler::class]);
+        $repository->persist($process);
 
         $this->assertTrue(
             DB::table($config->get('table'))->where('id', $process->id())->exists()
@@ -49,20 +51,19 @@ class LogicFlowTest extends AppCase
         $id = Str::uuid()->toString();
         DB::table($config->get('table'))->insert(
             [
-                'id'           => $id,
-                'bus'          => 'command-bus',
-                'process'      => HelloCommand::class,
-                'status'       => Process::PENDING,
-                'results'      => json_encode(
-                    [HelloHandler::class => ['status' => Process::PENDING]]
-                ),
+                'id' => $id,
+                'bus' => 'command-bus',
+                'process' => HelloCommand::class,
+                'status' => Process::PENDING,
+                'handlers' => json_encode([HelloHandler::class]),
+                'results' => json_encode([['status' => Process::PENDING]]),
                 'committed_at' => CarbonImmutable::now()->getPreciseTimestamp(3)
             ]
         );
 
         /* @var \Mrluke\Bus\Contracts\ProcessRepository $repository */
         $repository = $this->app->make(ProcessRepository::class);
-        $process = $repository->find($id);
+        $process = $repository->retrieve($id);
 
         $this->assertInstanceOf(
             Process::class,
@@ -77,20 +78,19 @@ class LogicFlowTest extends AppCase
         $id = Str::uuid()->toString();
         DB::table($config->get('table'))->insert(
             [
-                'id'           => $id,
-                'bus'          => 'command-bus',
-                'process'      => HelloCommand::class,
-                'status'       => Process::NEW,
-                'results'      => json_encode(
-                    [HelloHandler::class => ['status' => Process::NEW]]
-                ),
+                'id' => $id,
+                'bus' => 'command-bus',
+                'process' => HelloCommand::class,
+                'status' => Process::NEW,
+                'handlers' => json_encode([HelloHandler::class]),
+                'results' => json_encode([['status' => Process::NEW]]),
                 'committed_at' => CarbonImmutable::now()->getPreciseTimestamp(3)
             ]
         );
 
         /* @var \Mrluke\Bus\Contracts\ProcessRepository $repository */
         $repository = $this->app->make(ProcessRepository::class);
-        $repository->find($id);
+        $process = $repository->retrieve($id);
 
         $this->assertTrue(
             DB::table($config->get('table'))
@@ -98,7 +98,8 @@ class LogicFlowTest extends AppCase
                 ->exists()
         );
 
-        $repository->start($id);
+        $process->start();
+        $repository->persist($process);
 
         $this->assertTrue(
             DB::table($config->get('table'))
@@ -107,19 +108,20 @@ class LogicFlowTest extends AppCase
                 ->exists()
         );
 
-        $process = $repository->applySubResult(
-            $id,
+        $process->applyHandlerResult(
             HelloHandler::class,
             Process::SUCCEED,
             new HandlerResult()
         );
+        $repository->persist($process);
 
         $this->assertEquals(
-            [HelloHandler::class => ['status' => Process::SUCCEED]],
+            [['status' => Process::SUCCEED]],
             $process->toArray()['results']
         );
 
-        $repository->finish($id);
+        $process->finish();
+        $repository->persist($process);
 
         $this->assertTrue(
             DB::table($config->get('table'))
@@ -148,7 +150,7 @@ class LogicFlowTest extends AppCase
         $bus = $this->app->make(CommandBus::class);
         $bus->map([HelloCommand::class => HelloHandler::class]);
 
-        $bus->cleanOnSuccess = false;
+        $bus->persistSyncInstructions = true;
         $process = $bus->dispatch(new HelloCommand('Hello world'));
 
         $this->assertInstanceOf(
@@ -162,8 +164,8 @@ class LogicFlowTest extends AppCase
         );
 
         $this->assertEquals(
-            [HelloHandler::class => ['status' => Process::SUCCEED, 'feedback' => 'Hello world']],
-            $process->toArray()['results']
+            ['status' => Process::SUCCEED, 'feedback' => 'Hello world'],
+            $process->results()
         );
 
         $this->assertTrue(
@@ -179,7 +181,6 @@ class LogicFlowTest extends AppCase
         $bus = $this->app->make(CommandBus::class);
         $bus->map([HelloCommand::class => HelloHandler::class]);
 
-        $bus->cleanOnSuccess = true;
         $process = $bus->dispatch(new HelloCommand('Hello new world'));
 
         $this->assertInstanceOf(
@@ -193,8 +194,8 @@ class LogicFlowTest extends AppCase
         );
 
         $this->assertEquals(
-            [HelloHandler::class => ['status' => Process::SUCCEED, 'feedback' => 'Hello new world']],
-            $process->toArray()['results']
+            ['status' => Process::SUCCEED, 'feedback' => 'Hello new world'],
+            $process->results()
         );
 
         $this->assertTrue(
@@ -210,7 +211,7 @@ class LogicFlowTest extends AppCase
         $bus = $this->app->make(CommandBus::class);
         $bus->map([HelloCommand::class => ErrorHandler::class]);
 
-        $bus->cleanOnSuccess = true;
+        $bus->cleanWhenFinished = true;
         $bus->dispatch(new HelloCommand('An exception'));
     }
 
@@ -222,7 +223,6 @@ class LogicFlowTest extends AppCase
         $bus = $this->app->make(CommandBus::class);
         $bus->map([AsyncHelloCommand::class => HelloHandler::class]);
 
-        $bus->cleanOnSuccess = true;
         $bus->dispatch(new AsyncHelloCommand('Hello new world'));
 
         Queue::assertPushed(AsyncHandlerJob::class);
@@ -234,7 +234,6 @@ class LogicFlowTest extends AppCase
         $bus = $this->app->make(CommandBus::class);
         $bus->map([AsyncHelloCommand::class => ErrorHandler::class]);
 
-        $bus->cleanOnSuccess = true;
         $process = $bus->dispatch(new AsyncHelloCommand('Hello new world'));
 
         $this->assertInstanceOf(
@@ -248,8 +247,8 @@ class LogicFlowTest extends AppCase
         );
 
         $this->assertEquals(
-            [ErrorHandler::class => ['status' => Process::NEW]],
-            $process->toArray()['results']
+            ['status' => Process::NEW],
+            $process->results()
         );
     }
 
@@ -272,8 +271,8 @@ class LogicFlowTest extends AppCase
         );
 
         $this->assertEquals(
-            [HelloHandler::class => ['status' => Process::NEW]],
-            $process->toArray()['results']
+            ['status' => Process::NEW],
+            $process->results()
         );
     }
 
@@ -319,11 +318,11 @@ class LogicFlowTest extends AppCase
                 HelloHandler::class => ['status' => Process::SUCCEED, 'feedback' => 'Hello new world'],
                 ErrorHandler::class => ['status' => Process::FAILED, 'feedback' => 'Hello new world']
             ],
-            $process->toArray()['results']
+            $process->results()
         );
 
         $this->assertTrue(
-            !DB::table($config->get('table'))->where('id', $process->id())->exists()
+            DB::table($config->get('table'))->where('id', $process->id())->exists()
         );
     }
 

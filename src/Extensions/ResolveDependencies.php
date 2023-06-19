@@ -33,7 +33,7 @@ trait ResolveDependencies
      * @throws \Mrluke\Bus\Exceptions\RuntimeException
      * @throws \ReflectionException
      */
-    protected function resolveClass(Container $container, string $className)
+    protected function resolveClass(Container $container, string $className): mixed
     {
         if (!isset($this->resolved[$className])) {
             $reflection = new ReflectionClass($className);

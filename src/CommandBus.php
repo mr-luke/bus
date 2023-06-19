@@ -11,8 +11,6 @@ use Mrluke\Bus\Contracts\Process;
 use Mrluke\Bus\Extensions\UsesDefaultQueue;
 
 /**
- * Command Bus.
- *
  * @author  Łukasz Sitnicki <lukasz.sitnicki@gmail.com>
  * @licence MIT
  * @link    https://github.com/mr-luke/bus
@@ -22,17 +20,10 @@ class CommandBus extends SingleHandlerBus implements CommandBusContract, HasAsyn
 {
     use UsesDefaultQueue;
 
-    /** Determine if process should be deleted on success.
-     *
-     * @var bool
-     */
-    public bool $cleanOnSuccess = true;
+    public bool $cleanWhenFinished = true;
 
-    /**
-     * Determine if Bus should stop executing on exception.
-     *
-     * @var bool
-     */
+    public bool $persistSyncInstructions = false;
+
     public bool $stopOnException = true;
 
     /**

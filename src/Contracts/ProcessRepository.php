@@ -16,35 +16,6 @@ namespace Mrluke\Bus\Contracts;
 interface ProcessRepository
 {
     /**
-     * Apply sub-result to process.
-     *
-     * @param \Mrluke\Bus\Contracts\Process|string $processId
-     * @param string                               $handler
-     * @param string                               $status
-     * @param \Mrluke\Bus\Contracts\HandlerResult  $result
-     * @return \Mrluke\Bus\Contracts\Process
-     * @throws \Mrluke\Bus\Exceptions\MissingHandler
-     * @throws \Mrluke\Bus\Exceptions\MissingProcess
-     * @throws \Mrluke\Bus\Exceptions\InvalidAction
-     */
-    public function applySubResult(
-        Process|string $processId,
-        string         $handler,
-        string         $status,
-        HandlerResult  $result
-    ): Process;
-
-    /**
-     * Cancel process if possible.
-     *
-     * @param \Mrluke\Bus\Contracts\Process|string $processId
-     * @return \Mrluke\Bus\Contracts\Process
-     * @throws \Mrluke\Bus\Exceptions\MissingProcess
-     * @throws \Mrluke\Bus\Exceptions\InvalidAction
-     */
-    public function cancel(Process|string $processId): Process;
-
-    /**
      * Count processes by given status.
      *
      * @param string|null $status
@@ -52,19 +23,6 @@ interface ProcessRepository
      * @throws \Mrluke\Bus\Exceptions\InvalidAction
      */
     public function count(string $status = null): int;
-
-    /**
-     * Crete new process that should be watch.
-     *
-     * @param string $busName
-     * @param string $process
-     * @param array  $handlers
-     * @return \Mrluke\Bus\Contracts\Process
-     * @throws \Mrluke\Bus\Exceptions\InvalidAction
-     * @throws \InvalidArgumentException
-     * @throws \Exception
-     */
-    public function create(string $busName, string $process, array $handlers): Process;
 
     /**
      * Delete process by given id.
@@ -75,6 +33,14 @@ interface ProcessRepository
     public function delete(Process|string $processId): void;
 
     /**
+     * Persist any changes on Process.
+     *
+     * @param \Mrluke\Bus\Contracts\InteractsWithRepository $process
+     * @return void
+     */
+    public function persist(InteractsWithRepository $process): void;
+
+    /**
      * Retrieve process by given id.
      *
      * @param string $processId
@@ -82,25 +48,5 @@ interface ProcessRepository
      * @throws \Mrluke\Bus\Exceptions\MissingProcess
      * @throws \Mrluke\Bus\Exceptions\InvalidAction
      */
-    public function find(string $processId): Process;
-
-    /**
-     * Mark process as finished.
-     *
-     * @param \Mrluke\Bus\Contracts\Process|string $processId
-     * @return \Mrluke\Bus\Contracts\Process
-     * @throws \Mrluke\Bus\Exceptions\MissingProcess
-     * @throws \Mrluke\Bus\Exceptions\InvalidAction
-     */
-    public function finish(Process|string $processId): Process;
-
-    /**
-     * Start process of given id.
-     *
-     * @param \Mrluke\Bus\Contracts\Process|string $processId
-     * @return \Mrluke\Bus\Contracts\Process
-     * @throws \Mrluke\Bus\Exceptions\InvalidAction
-     * @throws \Mrluke\Bus\Exceptions\MissingProcess
-     */
-    public function start(Process|string $processId): Process;
+    public function retrieve(string $processId): Process;
 }

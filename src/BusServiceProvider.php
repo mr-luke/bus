@@ -14,8 +14,6 @@ use Mrluke\Bus\Contracts\Config;
 use Mrluke\Bus\Contracts\ProcessRepository;
 
 /**
- * Class BusServiceProvider
- *
  * @author  Łukasz Sitnicki <lukasz.sitnicki@gmail.com>
  * @licence MIT
  * @link    https://github.com/mr-luke/bus

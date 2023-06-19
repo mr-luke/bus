@@ -9,8 +9,6 @@ use Mrluke\Bus\Contracts\Process;
 use Mrluke\Configuration\Host;
 
 /**
- * Class CreateBusProcessesTable
- *
  * @author  Łukasz Sitnicki <lukasz.sitnicki@gmail.pl>
  * @licence MIT
  * @link    https://github.com/mr-luke/bus
@@ -51,8 +49,10 @@ return new class extends Migration
                         Process::CANCELED
                     ]
                 )->default(Process::NEW);
-                $table->unsignedInteger('handlers')->default(1);
+                $table->json('handlers')->nullable();
                 $table->json('results')->nullable();
+                $table->json('data')->nullable();
+                $table->json('related')->nullable();
                 $table->unsignedMediumInteger('pid')->nullable();
                 $table->{$this->config->get('users.primary.type')}('committed_by')->nullable();
                 $table->unsignedBigInteger('committed_at');
