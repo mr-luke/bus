@@ -135,7 +135,13 @@ class AsyncHandlerJob implements ShouldQueue
             $logger->debug('Process finished.', ['process' => $this->processId]);
         }
 
-        $repository->persist($process);
+        if (
+            $process->isFinished() && $process->isSuccessful() && $this->cleanOnSuccess
+        ) {
+            $repository->delete($process->id());
+        } else {
+            $repository->persist($process);
+        }
     }
 
     /**
@@ -145,6 +151,7 @@ class AsyncHandlerJob implements ShouldQueue
      * @throws \Mrluke\Bus\Exceptions\InvalidAction
      * @throws \Mrluke\Bus\Exceptions\MissingHandler
      * @throws \Mrluke\Bus\Exceptions\MissingProcess
+     * @throws \Mrluke\Bus\Exceptions\RuntimeException
      */
     public function failed(Throwable $e): void
     {

@@ -78,6 +78,13 @@ interface Process
     ): void;
 
     /**
+     * Determine if persistence occurred.
+     *
+     * @return bool
+     */
+    public function beenPersisted(): bool;
+
+    /**
      * Mark process as canceled.
      *
      * @return void
@@ -142,9 +149,11 @@ interface Process
     /**
      * Determine if process is finished with success.
      *
+     * @param string|null $handler
      * @return bool
+     * @throws \Mrluke\Bus\Exceptions\MissingHandler
      */
-    public function isSuccessful(): bool;
+    public function isSuccessful(string $handler = null): bool;
 
     /**
      * Determine if process can be marked as finished.

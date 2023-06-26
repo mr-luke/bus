@@ -37,6 +37,7 @@ interface ProcessRepository
      *
      * @param \Mrluke\Bus\Contracts\InteractsWithRepository $process
      * @return void
+     * @throws \Mrluke\Bus\Exceptions\RuntimeException
      */
     public function persist(InteractsWithRepository $process): void;
 

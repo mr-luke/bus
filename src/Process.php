@@ -287,10 +287,15 @@ class Process implements Arrayable, InteractsWithRepository, JsonSerializable, P
     /**
      * @inheritDoc
      */
-    public function isSuccessful(): bool
+    public function isSuccessful(string $handler = null): bool
     {
-        if (!$this->isFinished()) {
+        if (!$this->isFinished() && is_null($handler)) {
             return false;
+        }
+
+        if (!is_null($handler)) {
+            $result = $this->resultOf($handler);
+            return $result['status'] === ProcessContract::SUCCEED;
         }
 
         $aggregated = 0;

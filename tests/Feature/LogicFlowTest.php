@@ -20,6 +20,7 @@ use Mrluke\Bus\Exceptions\RuntimeException;
 use Mrluke\Bus\HandlerResult;
 use Tests\AppCase;
 use Tests\Components\AsyncHelloCommand;
+use Tests\Components\AsyncMultiBus;
 use Tests\Components\DependencyErrorHandler;
 use Tests\Components\ErrorHandler;
 use Tests\Components\ForceSyncHelloHandler;
@@ -296,7 +297,8 @@ class LogicFlowTest extends AppCase
             $this->app->make(ProcessRepository::class),
             $this->app->make(Container::class),
             $this->app->make(Logger::class),
-            function () {}
+            function() {
+            }
         );
 
         $bus->map([HelloCommand::class => [HelloHandler::class, ErrorHandler::class]]);
@@ -315,8 +317,12 @@ class LogicFlowTest extends AppCase
 
         $this->assertEquals(
             [
-                HelloHandler::class => ['status' => Process::SUCCEED, 'feedback' => 'Hello new world'],
-                ErrorHandler::class => ['status' => Process::FAILED, 'feedback' => 'Hello new world']
+                HelloHandler::class => [
+                    'status' => Process::SUCCEED, 'feedback' => 'Hello new world'
+                ],
+                ErrorHandler::class => [
+                    'status' => Process::FAILED, 'feedback' => 'Hello new world'
+                ]
             ],
             $process->results()
         );
@@ -349,6 +355,39 @@ class LogicFlowTest extends AppCase
         Queue::assertPushed(AsyncHandlerJob::class, 2);
     }
 
+    public function testAsyncCommandFiresMultipleMixedHandlersOnSyncQueue()
+    {
+        $config = $this->app->make(Config::class);
+        $container = $this->app->make(Container::class);
+
+        $bus = new AsyncMultiBus(
+            $this->app->make(ProcessRepository::class),
+            $container,
+            $this->app->make(Logger::class),
+            function() use ($container) {
+                return $container->make(Factory::class)->connection('sync');
+            }
+        );
+
+        $bus->map(
+            [
+                AsyncHelloCommand::class => [
+                    ForceSyncHelloHandler::class, HelloHandler::class
+                ]
+            ]
+        );
+
+        $process = $bus->dispatch(new AsyncHelloCommand('Hello new world'));
+
+        $this->assertTrue(
+            !$process->isSuccessful()
+        );
+
+        $this->assertTrue(
+            !DB::table($config->get('table'))->where('id', $process->id())->exists()
+        );
+    }
+
     public function testAsyncCommandWithForcedHandlerFiresLessJobs()
     {
         Queue::fake();
@@ -365,7 +404,8 @@ class LogicFlowTest extends AppCase
             }
         );
 
-        $bus->map([AsyncHelloCommand::class => [HelloHandler::class, ForceSyncHelloHandler::class]]);
+        $bus->map([AsyncHelloCommand::class => [HelloHandler::class, ForceSyncHelloHandler::class]]
+        );
 
         $process = $bus->dispatch(new AsyncHelloCommand('Hello new world'));
 

@@ -283,7 +283,6 @@ abstract class SingleHandlerBus implements Bus
      * @param Trigger|string                    $trigger
      * @param                                   $handler
      * @return \Mrluke\Bus\Contracts\Process
-     * @throws \Mrluke\Bus\Exceptions\MissingHandler
      * @throws \Mrluke\Bus\Exceptions\InvalidAction
      */
     protected function createProcess(Trigger|string $trigger, $handler): Process
@@ -396,7 +395,8 @@ abstract class SingleHandlerBus implements Bus
      * @throws \Illuminate\Contracts\Container\BindingResolutionException
      * @throws \Mrluke\Bus\Exceptions\InvalidAction
      * @throws \Mrluke\Bus\Exceptions\MissingHandler
-     * @throws \ReflectionException|\Mrluke\Bus\Exceptions\RuntimeException
+     * @throws \Mrluke\Bus\Exceptions\RuntimeException
+     * @throws \ReflectionException
      */
     protected function run(
         Process     $process,
@@ -419,7 +419,7 @@ abstract class SingleHandlerBus implements Bus
 
         if (
             $this->persistSyncInstructions ||
-            ($this->persistFailed && !$process->isSuccessful())
+            ($this->persistFailed && !$process->isSuccessful($handlerClass))
         ) {
             $this->processRepository->persist($process);
         }
@@ -433,13 +433,16 @@ abstract class SingleHandlerBus implements Bus
      * @param string                            $handlerClass
      * @return void
      * @throws \Mrluke\Bus\Exceptions\MissingConfiguration
+     * @throws \Mrluke\Bus\Exceptions\RuntimeException
      */
     protected function runAsync(
         Process     $process,
         Instruction $instruction,
         string      $handlerClass
     ): void {
-        $this->processRepository->persist($process);
+        if (!$process->beenPersisted()) {
+            $this->processRepository->persist($process);
+        }
 
         $this->pushInstructionToQueue(
             $process->id(),
